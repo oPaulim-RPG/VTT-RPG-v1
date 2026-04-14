@@ -1,0 +1,3473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ordem Paranormal VTT</title>
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --panel: #12161c;
+      --panel-2: #181e26;
+      --line: #26303d;
+      --text: #f0f3f7;
+      --muted: #9ba7b8;
+      --accent: #8b5cf6;
+      --accent-2: #22c55e;
+      --danger: #ef4444;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #0a0d11, #0f141b 60%, #0a0d11);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 340px 1fr 320px;
+      height: 100vh;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    body.role-player .app {
+      grid-template-columns: 1fr;
+      padding: 10px;
+    }
+
+    body.role-player #leftPanel,
+    body.role-player #rightPanel,
+    body.role-player .master-only,
+    body.role-player #sharedCueDock .media-master-controls {
+      display: none !important;
+    }
+
+    body.role-player .viewport-shell {
+      border-radius: 20px;
+    }
+
+    .panel {
+      background: rgba(18,22,28,.92);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+    }
+
+    .panel-header h1,
+    .panel-header h2,
+    .panel-header h3 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: .02em;
+    }
+
+    .panel-header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .panel-body {
+      padding: 14px;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    .stack { display: flex; flex-direction: column; gap: 10px; }
+    .row { display: flex; gap: 8px; }
+    .row > * { min-width: 0; }
+    .row.equal > * { flex: 1; }
+    .grow { flex: 1; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .field input,
+    .field select,
+    .field button,
+    textarea {
+      width: 100%;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    textarea { resize: vertical; min-height: 72px; }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    button {
+      cursor: pointer;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease, opacity .12s ease;
+      white-space: normal;
+      line-height: 1.2;
+      min-height: 42px;
+      text-wrap: balance;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px;
+    }
+
+    .media-subsection {
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 14px;
+      background: rgba(255,255,255,.02);
+    }
+
+    .media-subsection h4 {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .media-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .media-upload-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .prepared-audio-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .prepared-clip-card {
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+      display: grid;
+      gap: 10px;
+    }
+
+    .prepared-clip-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .prepared-clip-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .icon-actions {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .icon-btn {
+      min-height: 44px;
+      font-size: 18px;
+      font-weight: 700;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .seek-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .seek-row output {
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 84px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .prepared-clip-card .icon-actions {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    @media (max-width: 1100px) {
+      #sharedCueDock {
+        width: min(42vw, 380px);
+        height: min(52vh, 420px);
+      }
+    }
+
+    @media (max-width: 720px) {
+      #sharedCueDock {
+        width: calc(100% - 20px);
+        right: 10px;
+        top: 10px;
+        height: min(42vh, 320px);
+      }
+      .icon-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .prepared-clip-card .icon-actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .media-unlock-btn {
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      z-index: 50;
+      width: auto;
+      max-width: min(260px, calc(100% - 28px));
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(10,13,17,.92);
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .media-unlock-btn[hidden] {
+      display: none !important;
+    }
+
+    button:hover { transform: translateY(-1px); border-color: #3a4657; }
+    button:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: linear-gradient(180deg, rgba(139,92,246,.28), rgba(139,92,246,.16));
+      border-color: rgba(139,92,246,.55) !important;
+    }
+
+    .btn-success {
+      background: linear-gradient(180deg, rgba(34,197,94,.24), rgba(34,197,94,.12));
+      border-color: rgba(34,197,94,.45) !important;
+    }
+
+    .btn-danger {
+      background: linear-gradient(180deg, rgba(239,68,68,.24), rgba(239,68,68,.12));
+      border-color: rgba(239,68,68,.45) !important;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .viewport-shell {
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(139,92,246,.08), transparent 20%),
+        radial-gradient(circle at 80% 10%, rgba(34,197,94,.05), transparent 18%),
+        linear-gradient(180deg, #0b0d10, #08090c);
+      border: 1px solid var(--line);
+    }
+
+    .viewport-toolbar {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 30;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toolbar-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: rgba(9,11,14,.72);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: var(--shadow);
+      pointer-events: auto;
+      backdrop-filter: blur(10px);
+    }
+
+    .toolbar-group button,
+    .toolbar-group .pill {
+      width: auto;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    #viewport {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      cursor: grab;
+      user-select: none;
+    }
+
+    #viewport.panning,
+    #viewport.space-panning {
+      cursor: grabbing;
+    }
+
+    #stage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    #mapImage {
+      display: block;
+      pointer-events: none;
+      max-width: none;
+    }
+
+    #gridOverlay,
+    #tokenLayer,
+    #cursorLayer {
+      position: absolute;
+      inset: 0;
+    }
+
+    #gridOverlay {
+      pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,.22) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,.22) 1px, transparent 1px);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.2) inset;
+    }
+
+    .token {
+      position: absolute;
+      cursor: grab;
+      touch-action: none;
+      overflow: visible;
+      z-index: 12;
+    }
+
+    .token.dragging {
+      cursor: grabbing;
+      z-index: 18;
+    }
+
+    .token.selected { outline: 3px solid rgba(139,92,246,.8); outline-offset: 2px; }
+
+    .token-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      border: 2px solid rgba(255,255,255,.8);
+      box-shadow: 0 10px 18px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.4) inset;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 18%, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      pointer-events: none;
+    }
+
+    .token img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      display: block;
+      background: transparent;
+    }
+
+    .token-fallback {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: .03em;
+      pointer-events: none;
+      color: white;
+      text-shadow: 0 1px 4px rgba(0,0,0,.5);
+      border-radius: 12px;
+    }
+
+    .token-label {
+      position: absolute;
+      left: 50%;
+      bottom: -24px;
+      transform: translateX(-50%);
+      background: rgba(9,11,14,.85);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 8px 20px rgba(0,0,0,.25);
+    }
+
+    .ghost-ruler {
+      position: absolute;
+      z-index: 50;
+      pointer-events: none;
+      background: rgba(9,11,14,.88);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .measure-line {
+      position: absolute;
+      z-index: 46;
+      height: 2px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.95);
+      box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 0 18px rgba(255,255,255,.32);
+      transform-origin: 0 50%;
+      pointer-events: none;
+    }
+
+    .tool-btn.active {
+      background: rgba(139,92,246,.22);
+      border-color: rgba(139,92,246,.55);
+      color: #fff;
+    }
+
+    #viewport.measure-mode {
+      cursor: crosshair;
+    }
+
+    #sharedBgmBar {
+      display: none !important;
+    }
+
+    #sharedCueDock {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      left: auto;
+      bottom: auto;
+      width: min(34vw, 430px);
+      height: min(62vh, 540px);
+      border-radius: 20px;
+      background: rgba(4,6,10,.78);
+      border: 1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(10px);
+      z-index: 45;
+      overflow: hidden;
+      display: none;
+      pointer-events: none;
+      box-shadow: var(--shadow);
+    }
+
+    #sharedCueDock.video-active {
+      display: block;
+    }
+
+    #sharedCueDock .media-shell {
+      height: 100%;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    #sharedCueDock .media-stage {
+      flex: 1;
+      min-height: 0;
+      aspect-ratio: auto;
+      background: rgba(0,0,0,.92);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    #sharedCueDock .media-stage audio {
+      display: none;
+    }
+
+    #sharedCueDock .media-stage video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+
+    #sharedCueDock .media-header,
+    #sharedCueDock .media-status {
+      color: rgba(255,255,255,.82);
+    }
+
+    .map-list,
+    .token-list,
+    .presence-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      border-radius: 14px;
+      padding: 10px;
+    }
+
+    .map-card.active,
+    .token-card.active {
+      border-color: rgba(139,92,246,.55);
+      background: rgba(139,92,246,.08);
+    }
+
+    .map-thumb {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: #090b0e;
+    }
+
+    .map-meta,
+    .token-meta,
+    .presence-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .token-preview {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.12);
+      flex: 0 0 auto;
+      background: rgba(255,255,255,.04);
+    }
+
+    .token-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .help {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--line);
+      margin: 4px 0;
+    }
+
+    .cursor {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    .cursor-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.9);
+      box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    }
+
+    .cursor-label {
+      margin-top: 5px;
+      display: inline-block;
+      background: rgba(9,11,14,.88);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .status-line {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .kbd {
+      display: inline-block;
+      border: 1px solid rgba(255,255,255,.14);
+      border-bottom-width: 2px;
+      border-radius: 8px;
+      padding: 2px 6px;
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      font-size: 11px;
+      margin: 0 2px;
+    }
+
+    .empty-state {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 10px 4px;
+    }
+
+    .role-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .map-ratio {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    #sharedCueDock {
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      width: min(540px, calc(100% - 28px));
+      min-height: 60px;
+      border-radius: 18px;
+      background: rgba(8,10,14,.88);
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      z-index: 40;
+      overflow: hidden;
+    }
+
+    #sharedCueDock[hidden] {
+      display: none !important;
+    }
+
+    .media-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .media-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .media-stage {
+      width: 100%;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #050608;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .media-stage audio,
+    .media-stage video,
+    .media-stage iframe {
+      width: 100%;
+      display: block;
+      background: #000;
+    }
+
+    .media-stage audio {
+      height: 56px;
+    }
+
+    .media-stage.video {
+      aspect-ratio: 16 / 9;
+    }
+
+    .media-status {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .media-release {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(0,0,0,.55);
+      z-index: 2;
+    }
+
+    .media-release button {
+      width: auto;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(8,10,14,.95);
+      border: 1px solid rgba(255,255,255,.18);
+      color: var(--text);
+    }
+
+    .master-guard {
+      border-left: 3px solid rgba(139,92,246,.7);
+      padding-left: 10px;
+    }
+
+    @media (max-width: 1320px) {
+      .app {
+        grid-template-columns: 300px 1fr;
+        grid-template-rows: 1fr 300px;
+      }
+      #rightPanel { grid-column: 1 / span 2; }
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: 280px 1fr 320px;
+      }
+      #leftPanel, #rightPanel { grid-column: auto; }
+    }
+  
+
+    .room-launcher {
+      position: fixed;
+      inset: 0;
+      background: rgba(4,6,10,.78);
+      backdrop-filter: blur(10px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .room-launcher.open {
+      display: flex;
+    }
+
+    .room-launcher-card {
+      width: min(560px, 100%);
+      background: rgba(10,14,22,.96);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 22px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.45);
+      padding: 24px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .room-launcher-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .room-launcher-actions button {
+      min-height: 52px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .room-launcher-note {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .room-launcher-toggle {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 1990;
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: rgba(10,14,22,.96);
+      border: 1px solid rgba(255,255,255,.14);
+      color: var(--text);
+      box-shadow: 0 12px 32px rgba(0,0,0,.25);
+    }
+
+  
+
+    /* v3.6 media + fullscreen overrides */
+    .prepared-bgm-grid,
+    .prepared-audio-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .prepared-clip-card .icon-actions,
+    .prepared-bgm-card .icon-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .prepared-bgm-card {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .prepared-bgm-card.active {
+      border-color: rgba(34,197,94,.45);
+      background: rgba(34,197,94,.08);
+    }
+
+    #sharedCueDock {
+      position: absolute !important;
+      inset: 0 !important;
+      width: auto !important;
+      height: auto !important;
+      border-radius: 0 !important;
+      background: rgba(0,0,0,.94) !important;
+      border: none !important;
+      backdrop-filter: none !important;
+      box-shadow: none !important;
+      z-index: 60 !important;
+      display: none;
+      pointer-events: none;
+    }
+
+    #sharedCueDock.video-active {
+      display: block !important;
+    }
+
+    #sharedCueDock .media-shell {
+      height: 100%;
+      padding: 18px;
+      justify-content: center;
+    }
+
+    #sharedCueDock .media-header,
+    #sharedCueDock .media-status {
+      display: none !important;
+    }
+
+    #sharedCueDock .media-stage,
+    #sharedCueDock .media-stage.video {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: auto !important;
+      border: none !important;
+      border-radius: 0 !important;
+      background: #000 !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #sharedCueDock .media-stage video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+
+  </style>
+</head>
+<body>
+
+  <button id="roomLauncherToggle" class="room-launcher-toggle">Menu da sala</button>
+  <div id="roomLauncher" class="room-launcher open">
+    <div class="room-launcher-card">
+      <div>
+        <h2 style="margin:0 0 6px;">Entrar na mesa</h2>
+        <div class="room-launcher-note">Escolha claramente se você entra como mestre ou player. Este painel fica sempre disponível no botão “Menu da sala”.</div>
+      </div>
+      <div class="row equal">
+        <div class="field grow">
+          <label>Sala</label>
+          <input id="launcherRoomInput" placeholder="ex: caso-marcado" />
+        </div>
+        <div class="field" style="width: 140px;">
+          <label>Nome</label>
+          <input id="launcherNameInput" placeholder="Você" />
+        </div>
+      </div>
+      <div class="field grow">
+        <label>Chave do mestre</label>
+        <input id="launcherMasterKeyInput" type="password" placeholder="obrigatória só para mestre" />
+      </div>
+      <div class="room-launcher-actions">
+        <button id="joinAsMasterBtn" class="btn-primary">Entrar como mestre</button>
+        <button id="joinAsPlayerBtn">Entrar como player</button>
+      </div>
+      <div class="room-launcher-note" id="launcherStatus">Ao entrar como player, você vê apenas a mesa. Ao entrar como mestre, a chave controla os recursos de edição.</div>
+    </div>
+  </div>
+
+  <div class="app">
+    <section class="panel" id="leftPanel">
+      <div class="panel-header">
+        <h1>Ordem Paranormal VTT</h1>
+        <p>Mapa em tempo real, grid automático sobre arte sem grid e tokens com encaixe por quadrado.</p>
+      </div>
+      <div class="panel-body stack">
+        <div class="card stack">
+          <div class="row equal">
+            <div class="field grow">
+              <label>Sala</label>
+              <input id="roomInput" placeholder="ex: caso-marcado" />
+            </div>
+            <div class="field" style="width: 120px;">
+              <label>Nome</label>
+              <input id="nameInput" placeholder="Você" />
+            </div>
+          </div>
+          <div class="row equal">
+            <div class="field grow">
+              <label>Entrar como</label>
+              <select id="roleSelect">
+                <option value="master">Mestre</option>
+                <option value="player">Player</option>
+              </select>
+            </div>
+            <div class="field grow">
+              <label>Chave do mestre</label>
+              <input id="masterKeyInput" type="password" placeholder="defina ou informe a chave" />
+            </div>
+          </div>
+          <div class="row equal">
+            <button id="joinRoomBtn" class="btn-primary">Entrar / trocar sala</button>
+            <button id="copyRoomBtn">Copiar código</button>
+          </div>
+          <div class="status-line" id="connectionStatus">Desconectado.</div>
+          <div class="status-line" id="roleStatus">Entre como mestre para liberar edição ou como player para ver apenas a mesa.</div>
+        </div>
+
+        <div class="card stack">
+          <div class="row equal">
+            <div class="field grow">
+              <label>Adicionar mapas</label>
+              <input id="mapUpload" type="file" accept="image/*" multiple />
+            </div>
+          </div>
+          <div class="help">O mapa é compartilhado com a sala. Ao enviar, o sistema tenta inferir automaticamente o grid e centraliza o overlay.</div>
+          <div class="map-list" id="mapList"></div>
+        </div>
+
+        <div class="card stack">
+          <div class="row equal">
+            <div class="field grow">
+              <label>Adicionar token</label>
+              <input id="tokenImageUpload" type="file" accept="image/*" />
+            </div>
+          </div>
+          <div class="row equal">
+            <div class="field grow">
+              <label>Nome do token</label>
+              <input id="tokenNameInput" placeholder="ex: Joui" />
+            </div>
+            <div class="field" style="width: 110px;">
+              <label>Tamanho</label>
+              <select id="tokenSizeInput">
+                <option value="1">Min/Peq/Méd (1x1)</option>
+                <option value="2">Grande (2x2)</option>
+                <option value="3">Enorme (3x3)</option>
+                <option value="6">Colossal (6x6)</option>
+              </select>
+            </div>
+          </div>
+          <div class="row equal">
+            <div class="field">
+              <label>Cor fallback</label>
+              <input id="tokenColorInput" type="color" value="#8b5cf6" />
+            </div>
+            <div class="field grow">
+              <label>&nbsp;</label>
+              <button id="addTokenBtn" class="btn-success">Criar token</button>
+            </div>
+          </div>
+          <div class="token-list" id="tokenList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel viewport-shell">
+      <div class="viewport-toolbar">
+        <div class="toolbar-group">
+          <button id="fitViewBtn">Enquadrar</button>
+          <button id="zoomInBtn">+</button>
+          <button id="zoomOutBtn">−</button>
+          <button id="resetPanBtn">Resetar visão</button>
+          <span class="pill" id="zoomLabel">100%</span>
+        </div>
+        <div class="toolbar-group">
+          <button id="toolSelectBtn" class="tool-btn active">Mover / selecionar (V)</button>
+          <button id="toolMeasureBtn" class="tool-btn">Medição (M)</button>
+          <button id="toggleGridBtn">Ocultar grid</button>
+          <span class="pill" id="movementLabel">1 q = 1,5 m · Médio = 6 q</span>
+        </div>
+      </div>
+
+      <div id="viewport">
+        <div id="stage">
+          <img id="mapImage" alt="Mapa atual" />
+          <div id="gridOverlay"></div>
+          <div id="tokenLayer"></div>
+          <div id="cursorLayer"></div>
+        </div>
+      </div>
+      <div class="ghost-ruler" id="dragRuler" hidden></div>
+      <div class="measure-line" id="measureLine" hidden></div>
+      <div id="sharedBgmBar" hidden></div>
+      <div id="sharedCueDock" hidden></div>
+      <button id="mediaUnlockBtn" class="media-unlock-btn" hidden>Liberar mídia neste navegador</button>
+    </section>
+
+    <section class="panel" id="rightPanel">
+      <div class="panel-header">
+        <h2>Controle da cena</h2>
+        <p>Ajuste fino do grid automático, presença da sala e ações do mapa/token selecionado.</p>
+      </div>
+      <div class="panel-body stack">
+        <div class="card stack">
+          <h3 style="margin:0;font-size:14px;">Grid do mapa atual</h3>
+          <div class="field">
+            <label>Ajuste rápido (quadrados na largura)</label>
+            <div class="row" style="align-items:center;">
+              <input id="gridQuickColsRange" class="grow" type="range" min="5" max="100" step="1" />
+              <input id="gridQuickColsNumber" type="number" min="5" step="1" style="width:92px;" />
+            </div>
+            <div class="status-line" id="gridQuickPreview">Arraste a barra para recalcular largura, altura e offsets automaticamente.</div>
+          </div>
+          <div class="row equal">
+            <div class="field grow">
+              <label>Colunas</label>
+              <input id="gridColsInput" type="number" min="1" step="1" />
+            </div>
+            <div class="field grow">
+              <label>Linhas</label>
+              <input id="gridRowsInput" type="number" min="1" step="1" />
+            </div>
+          </div>
+          <div class="row equal">
+            <div class="field grow">
+              <label>Offset X (px)</label>
+              <input id="gridOffsetXInput" type="number" step="0.1" />
+            </div>
+            <div class="field grow">
+              <label>Offset Y (px)</label>
+              <input id="gridOffsetYInput" type="number" step="0.1" />
+            </div>
+          </div>
+          <div class="row equal">
+            <div class="field grow">
+              <label>Cor do grid</label>
+              <input id="gridColorInput" type="color" value="#9ecbff" />
+            </div>
+            <div class="field grow">
+              <label>Opacidade do grid</label>
+              <input id="gridOpacityInput" type="range" min="0" max="1" step="0.01" />
+            </div>
+          </div>
+          <div class="row equal">
+            <button id="autoGridBtn" class="btn-primary">Recalcular automático</button>
+            <button id="applyGridBtn">Aplicar ajustes</button>
+          </div>
+          <div class="help">A inferência automática tenta encaixar quadrados plausíveis no mapa inteiro. Se a arte fugir do padrão, corrija só colunas/linhas ou os offsets.</div>
+        </div>
+
+        <div class="card stack">
+          <h3 style="margin:0;font-size:14px;">Token selecionado</h3>
+          <div id="selectedTokenEmpty" class="empty-state">Selecione um token no mapa ou na lista para editar nome, tamanho e posição.</div>
+          <div id="selectedTokenControls" hidden class="stack">
+            <div class="row equal">
+              <div class="field grow">
+                <label>Nome</label>
+                <input id="selectedTokenName" />
+              </div>
+              <div class="field" style="width: 110px;">
+                <label>Tamanho</label>
+                <select id="selectedTokenSize">
+                  <option value="1">1x1</option>
+                  <option value="2">2x2</option>
+                  <option value="3">3x3</option>
+                  <option value="6">6x6</option>
+                </select>
+              </div>
+            </div>
+            <div class="row equal">
+              <div class="field grow">
+                <label>X (quadrados)</label>
+                <input id="selectedTokenX" type="number" step="1" />
+              </div>
+              <div class="field grow">
+                <label>Y (quadrados)</label>
+                <input id="selectedTokenY" type="number" step="1" />
+              </div>
+            </div>
+            <div class="row equal">
+              <button id="saveTokenBtn">Salvar token</button>
+              <button id="centerTokenBtn">Centralizar</button>
+              <button id="deleteTokenBtn" class="btn-danger">Excluir</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card stack">
+          <h3 style="margin:0;font-size:14px;">Mapa atual</h3>
+          <div class="map-ratio" id="currentMapMeta">Nenhum mapa carregado.</div>
+          <div class="help">Sem corte nos tokens: prefira PNG 1:1 com fundo transparente e o personagem centralizado. Mesmo assim, esta versão já usa ajuste visual sem crop.</div>
+        </div>
+
+        <div class="card stack master-only">
+          <h3 style="margin:0;font-size:14px;">Áudio e cena</h3>
+          <div class="help master-guard">Trilha em segundo plano, áudios rápidos em 1 clique e cena pronta para tocar só quando você mandar. Quando a cena parar, a trilha volta sozinha.</div>
+
+          <div class="media-subsection stack">
+            <div class="media-title-row">
+              <h4>Trilha sonora</h4>
+              <span class="pill">fundo contínuo</span>
+            </div>
+            <input id="bgmTypeInput" type="hidden" value="audio-file" />
+            <div class="field" id="bgmFileField">
+              <label>Arquivo da trilha</label>
+              <input id="bgmFileInput" type="file" accept=".mp3,.ogg,.wav,.m4a,audio/*" />
+            </div>
+            <div class="icon-actions media-master-controls">
+              <button id="loadBgmBtn" class="btn-primary icon-btn" title="Carregar trilha">⟳</button>
+              <button id="bgmPlayBtn" class="btn-success icon-btn" title="Tocar trilha">▶</button>
+              <button id="bgmPauseBtn" class="icon-btn" title="Pausar trilha">⏸</button>
+              <button id="clearBgmBtn" class="btn-danger icon-btn" title="Remover trilha">🗑</button>
+            </div>
+            <div class="seek-row media-master-controls">
+              <input id="bgmSeekInput" type="range" min="0" max="0" step="0.1" value="0" />
+              <output id="bgmTimeLabel">00:00 / 00:00</output>
+            </div>
+            <div class="status-line" id="bgmStatus">Nenhuma trilha carregada.</div>
+            <div class="field">
+              <label>Biblioteca de trilhas</label>
+              <input id="preparedBgmInput" type="file" accept=".mp3,.ogg,.wav,.m4a,audio/*" multiple />
+            </div>
+            <div class="help">Deixe várias trilhas prontas. Ao tocar uma, a anterior para. Se a cena parar, a trilha ativa volta.</div>
+            <div class="prepared-bgm-grid" id="preparedBgmList"></div>
+          </div>
+
+          <div class="media-subsection stack">
+            <div class="media-title-row">
+              <h4>Áudios rápidos</h4>
+              <span class="pill">1 clique</span>
+            </div>
+            <div class="field">
+              <label>Adicionar áudios rápidos</label>
+              <input id="preparedAudioInput" type="file" accept=".mp3,.ogg,.wav,.m4a,audio/*" multiple />
+            </div>
+            <div class="help">Cada áudio fica pronto com play, pause e excluir. Se você tocar outro, o anterior para. Quando ele terminar, a trilha volta.</div>
+            <div class="prepared-audio-grid" id="preparedAudioList"></div>
+          </div>
+
+          <div class="media-subsection stack">
+            <div class="media-title-row">
+              <h4>Cena pontual</h4>
+              <span class="pill">áudio ou vídeo local</span>
+            </div>
+            <input id="cueTypeInput" type="hidden" value="video-file" />
+            <div class="field" id="cueFileField">
+              <label id="cueFileLabel">Arquivo da cena</label>
+              <input id="cueFileInput" type="file" accept=".mp3,.ogg,.wav,.m4a,.mp4,.mov,.webm,audio/*,video/*,video/quicktime" />
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">
+              <input id="cueResumeBgmInput" type="checkbox" checked />
+              Pausar a trilha e retomar quando a cena acabar
+            </label>
+            <div class="icon-actions media-master-controls">
+              <button id="loadCueBtn" class="btn-primary icon-btn" title="Carregar cena">⟳</button>
+              <button id="cuePlayBtn" class="btn-success icon-btn" title="Tocar cena">▶</button>
+              <button id="cuePauseBtn" class="icon-btn" title="Pausar cena">⏸</button>
+              <button id="hideCueBtn" class="btn-danger icon-btn" title="Limpar cena">🗑</button>
+            </div>
+            <div class="seek-row media-master-controls">
+              <input id="cueSeekInput" type="range" min="0" max="0" step="0.1" value="0" />
+              <output id="cueTimeLabel">00:00 / 00:00</output>
+            </div>
+            <div class="status-line" id="cueStatus">Nenhuma cena carregada.</div>
+          </div>
+        </div>
+
+        <div class="card stack">
+          <h3 style="margin:0;font-size:14px;">Pessoas na sala</h3>
+          <div class="presence-list" id="presenceList"></div>
+        </div>
+
+        <div class="card stack">
+          <h3 style="margin:0;font-size:14px;">Atalhos</h3>
+          <div class="help">
+            Use o scroll do mouse para dar zoom.<br>
+            Arraste com o botão do meio do mouse para mover a câmera.<br>
+            Arraste um token para mover com snap automático.<br>
+            Use <span class="kbd">V</span> para mover/selecionar e <span class="kbd">M</span> para medição.<br>
+            Na medição, você pode começar tanto no chão quanto em cima da arte de um token.<br>
+            O mapa atual troca ao vivo para todo mundo na sala.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    import * as Y from 'https://cdn.jsdelivr.net/npm/yjs@13.6.24/+esm';
+    import { WebrtcProvider } from 'https://cdn.jsdelivr.net/npm/y-webrtc@10.3.0/+esm';
+
+    const els = {
+      roomInput: document.getElementById('roomInput'),
+      nameInput: document.getElementById('nameInput'),
+      roleSelect: document.getElementById('roleSelect'),
+      masterKeyInput: document.getElementById('masterKeyInput'),
+      joinRoomBtn: document.getElementById('joinRoomBtn'),
+      copyRoomBtn: document.getElementById('copyRoomBtn'),
+      connectionStatus: document.getElementById('connectionStatus'),
+      roleStatus: document.getElementById('roleStatus'),
+      mapUpload: document.getElementById('mapUpload'),
+      mapList: document.getElementById('mapList'),
+      tokenImageUpload: document.getElementById('tokenImageUpload'),
+      tokenNameInput: document.getElementById('tokenNameInput'),
+      tokenSizeInput: document.getElementById('tokenSizeInput'),
+      tokenColorInput: document.getElementById('tokenColorInput'),
+      addTokenBtn: document.getElementById('addTokenBtn'),
+      tokenList: document.getElementById('tokenList'),
+      viewport: document.getElementById('viewport'),
+      stage: document.getElementById('stage'),
+      mapImage: document.getElementById('mapImage'),
+      gridOverlay: document.getElementById('gridOverlay'),
+      tokenLayer: document.getElementById('tokenLayer'),
+      cursorLayer: document.getElementById('cursorLayer'),
+      dragRuler: document.getElementById('dragRuler'),
+      measureLine: document.getElementById('measureLine'),
+      fitViewBtn: document.getElementById('fitViewBtn'),
+      zoomInBtn: document.getElementById('zoomInBtn'),
+      zoomOutBtn: document.getElementById('zoomOutBtn'),
+      resetPanBtn: document.getElementById('resetPanBtn'),
+      zoomLabel: document.getElementById('zoomLabel'),
+      toolSelectBtn: document.getElementById('toolSelectBtn'),
+      toolMeasureBtn: document.getElementById('toolMeasureBtn'),
+      toggleGridBtn: document.getElementById('toggleGridBtn'),
+      movementLabel: document.getElementById('movementLabel'),
+      gridQuickColsRange: document.getElementById('gridQuickColsRange'),
+      gridQuickColsNumber: document.getElementById('gridQuickColsNumber'),
+      gridQuickPreview: document.getElementById('gridQuickPreview'),
+      gridColsInput: document.getElementById('gridColsInput'),
+      gridRowsInput: document.getElementById('gridRowsInput'),
+      gridOffsetXInput: document.getElementById('gridOffsetXInput'),
+      gridOffsetYInput: document.getElementById('gridOffsetYInput'),
+      gridOpacityInput: document.getElementById('gridOpacityInput'),
+      gridColorInput: document.getElementById('gridColorInput'),
+      autoGridBtn: document.getElementById('autoGridBtn'),
+      applyGridBtn: document.getElementById('applyGridBtn'),
+      selectedTokenEmpty: document.getElementById('selectedTokenEmpty'),
+      selectedTokenControls: document.getElementById('selectedTokenControls'),
+      selectedTokenName: document.getElementById('selectedTokenName'),
+      selectedTokenSize: document.getElementById('selectedTokenSize'),
+      selectedTokenX: document.getElementById('selectedTokenX'),
+      selectedTokenY: document.getElementById('selectedTokenY'),
+      saveTokenBtn: document.getElementById('saveTokenBtn'),
+      centerTokenBtn: document.getElementById('centerTokenBtn'),
+      deleteTokenBtn: document.getElementById('deleteTokenBtn'),
+      presenceList: document.getElementById('presenceList'),
+      currentMapMeta: document.getElementById('currentMapMeta'),
+      bgmTypeInput: document.getElementById('bgmTypeInput'),
+      bgmUrlField: document.getElementById('bgmUrlField'),
+      bgmUrlInput: document.getElementById('bgmUrlInput'),
+      bgmFileField: document.getElementById('bgmFileField'),
+      bgmFileInput: document.getElementById('bgmFileInput'),
+      loadBgmBtn: document.getElementById('loadBgmBtn'),
+      clearBgmBtn: document.getElementById('clearBgmBtn'),
+      bgmPlayBtn: document.getElementById('bgmPlayBtn'),
+      bgmPauseBtn: document.getElementById('bgmPauseBtn'),
+      bgmStopBtn: document.getElementById('bgmStopBtn'),
+      bgmSeekInput: document.getElementById('bgmSeekInput'),
+      bgmTimeLabel: document.getElementById('bgmTimeLabel'),
+      bgmStatus: document.getElementById('bgmStatus'),
+      cueTypeInput: document.getElementById('cueTypeInput'),
+      cueUrlField: document.getElementById('cueUrlField'),
+      cueUrlInput: document.getElementById('cueUrlInput'),
+      cueFileField: document.getElementById('cueFileField'),
+      cueFileLabel: document.getElementById('cueFileLabel'),
+      cueFileInput: document.getElementById('cueFileInput'),
+      cueResumeBgmInput: document.getElementById('cueResumeBgmInput'),
+      loadCueBtn: document.getElementById('loadCueBtn'),
+      hideCueBtn: document.getElementById('hideCueBtn'),
+      cuePlayBtn: document.getElementById('cuePlayBtn'),
+      cuePauseBtn: document.getElementById('cuePauseBtn'),
+      cueStopBtn: document.getElementById('cueStopBtn'),
+      cueSeekInput: document.getElementById('cueSeekInput'),
+      cueTimeLabel: document.getElementById('cueTimeLabel'),
+      cueStatus: document.getElementById('cueStatus'),
+      preparedAudioInput: document.getElementById('preparedAudioInput'),
+      preparedAudioList: document.getElementById('preparedAudioList'),
+      preparedBgmInput: document.getElementById('preparedBgmInput'),
+      preparedBgmList: document.getElementById('preparedBgmList'),
+      sharedBgmBar: document.getElementById('sharedBgmBar'),
+      sharedCueDock: document.getElementById('sharedCueDock'),
+      mediaUnlockBtn: document.getElementById('mediaUnlockBtn'),
+      roomLauncher: document.getElementById('roomLauncher'),
+      roomLauncherToggle: document.getElementById('roomLauncherToggle'),
+      launcherRoomInput: document.getElementById('launcherRoomInput'),
+      launcherNameInput: document.getElementById('launcherNameInput'),
+      launcherMasterKeyInput: document.getElementById('launcherMasterKeyInput'),
+      joinAsMasterBtn: document.getElementById('joinAsMasterBtn'),
+      joinAsPlayerBtn: document.getElementById('joinAsPlayerBtn'),
+      launcherStatus: document.getElementById('launcherStatus'),
+    };
+
+    const DEFAULT_ROOM = localStorage.getItem('opvtt-room') || 'mesa-ordem';
+    const DEFAULT_NAME = localStorage.getItem('opvtt-name') || 'Mestre';
+    const DEFAULT_ROLE = localStorage.getItem('opvtt-role') || 'master';
+
+    els.roomInput.value = DEFAULT_ROOM;
+    els.nameInput.value = DEFAULT_NAME;
+    els.roleSelect.value = DEFAULT_ROLE;
+    els.launcherRoomInput.value = DEFAULT_ROOM;
+    els.launcherNameInput.value = DEFAULT_NAME;
+    els.launcherMasterKeyInput.value = localStorage.getItem('opvtt-master-key') || '';
+
+    const state = {
+      ydoc: null,
+      provider: null,
+      currentRoom: null,
+      maps: null,
+      tokens: null,
+      scene: null,
+      meta: null,
+      media: null,
+      role: DEFAULT_ROLE,
+      isMaster: DEFAULT_ROLE === 'master',
+      dragBroadcastAt: 0,
+      selectedTokenId: null,
+      selectedMapId: null,
+      currentMap: null,
+      localView: {
+        x: 40,
+        y: 40,
+        zoom: 1,
+      },
+      isSpaceDown: false,
+      panPointer: null,
+      dragToken: null,
+      renderedTokenIds: [],
+      toolMode: localStorage.getItem('opvtt-tool-mode') || 'select',
+      measureDrag: null,
+      mediaPrimed: false,
+      mediaUnlockPending: false,
+    };
+
+    const SIZE_LABELS = {
+      1: '1x1',
+      2: '2x2',
+      3: '3x3',
+      6: '6x6',
+    };
+
+    function uid(prefix = 'id') {
+      return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+    }
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    async function hashString(value = '') {
+      const bytes = new TextEncoder().encode(value);
+      const digest = await crypto.subtle.digest('SHA-256', bytes);
+      return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function formatAspectRatio(width, height) {
+      if (!width || !height) return '—';
+      const ratio = width / height;
+      return `${ratio.toFixed(3)}:1`;
+    }
+
+    function gcd(a, b) {
+      while (b) [a, b] = [b, a % b];
+      return a || 1;
+    }
+
+    function reduceRatio(width, height) {
+      if (!width || !height) return '—';
+      const d = gcd(width, height);
+      return `${Math.round(width / d)}:${Math.round(height / d)}`;
+    }
+
+
+    function setToolMode(mode = 'select') {
+      state.toolMode = mode === 'measure' ? 'measure' : 'select';
+      localStorage.setItem('opvtt-tool-mode', state.toolMode);
+      els.viewport.classList.toggle('measure-mode', state.toolMode === 'measure');
+      if (els.toolSelectBtn) els.toolSelectBtn.classList.toggle('active', state.toolMode === 'select');
+      if (els.toolMeasureBtn) els.toolMeasureBtn.classList.toggle('active', state.toolMode === 'measure');
+    }
+
+    function hideMeasureOverlay() {
+      els.dragRuler.hidden = true;
+      if (els.measureLine) els.measureLine.hidden = true;
+    }
+
+    function gridCellFromImagePoint(imageX, imageY, grid) {
+      const gx = clamp(Math.floor((imageX - grid.offsetX) / grid.cell), 0, Math.max(0, grid.cols - 1));
+      const gy = clamp(Math.floor((imageY - grid.offsetY) / grid.cell), 0, Math.max(0, grid.rows - 1));
+      return {
+        gx,
+        gy,
+        centerX: grid.offsetX + (gx + 0.5) * grid.cell,
+        centerY: grid.offsetY + (gy + 0.5) * grid.cell,
+      };
+    }
+
+    function showMeasureOverlay(startCell, endCell) {
+      const start = imageToViewportCoords(startCell.centerX, startCell.centerY);
+      const end = imageToViewportCoords(endCell.centerX, endCell.centerY);
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+      if (els.measureLine) {
+        els.measureLine.hidden = false;
+        els.measureLine.style.left = `${start.x}px`;
+        els.measureLine.style.top = `${start.y}px`;
+        els.measureLine.style.width = `${distance}px`;
+        els.measureLine.style.transform = `rotate(${angle}deg)`;
+      }
+      els.dragRuler.hidden = false;
+      els.dragRuler.style.left = `${end.x + 12}px`;
+      els.dragRuler.style.top = `${end.y - 12}px`;
+      els.dragRuler.textContent = formatDistanceSquares(endCell.gx - startCell.gx, endCell.gy - startCell.gy);
+    }
+
+    async function primeMediaPlayback() {
+      if (state.mediaPrimed) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          await ctx.resume();
+          const buffer = ctx.createBuffer(1, 1, 22050);
+          const source = ctx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(ctx.destination);
+          source.start(0);
+          source.stop(0);
+        }
+      } catch {}
+      state.mediaPrimed = true;
+    }
+
+    function showMediaUnlock(message = 'Liberar mídia neste navegador') {
+      state.mediaUnlockPending = true;
+      if (els.mediaUnlockBtn) {
+        els.mediaUnlockBtn.hidden = false;
+        els.mediaUnlockBtn.textContent = message;
+      }
+    }
+
+    function hideMediaUnlock() {
+      state.mediaUnlockPending = false;
+      if (els.mediaUnlockBtn) els.mediaUnlockBtn.hidden = true;
+    }
+
+    function getPreparedAudioClips() {
+      if (!state.scene) return [];
+      try {
+        const raw = state.scene.get('preparedAudioClips');
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function setPreparedAudioClips(clips) {
+      if (!state.scene) return;
+      state.scene.set('preparedAudioClips', JSON.stringify(clips));
+    }
+
+
+    function getPreparedBgmClips() {
+      if (!state.scene) return [];
+      try {
+        const raw = state.scene.get('preparedBgmClips');
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function setPreparedBgmClips(clips) {
+      if (!state.scene) return;
+      state.scene.set('preparedBgmClips', JSON.stringify(clips));
+    }
+
+    async function addPreparedBgmFiles(files) {
+      if (!requireMaster() || !files?.length) return;
+      const clips = getPreparedBgmClips();
+      for (const file of files) {
+        const src = await fileToDataURL(file);
+        clips.push({
+          id: uid('bgmclip'),
+          title: file.name,
+          src,
+          type: 'audio-file',
+        });
+      }
+      setPreparedBgmClips(clips);
+      renderPreparedBgmList();
+    }
+
+    function renderPreparedBgmList() {
+      if (!els.preparedBgmList) return;
+      const clips = getPreparedBgmClips();
+      const bgmState = getBgmState();
+      if (!clips.length) {
+        els.preparedBgmList.innerHTML = '<div class="empty-state">Nenhuma trilha preparada ainda.</div>';
+        return;
+      }
+      els.preparedBgmList.innerHTML = '';
+      clips.forEach((clip) => {
+        const isActive = bgmState.clipId === clip.id;
+        const div = document.createElement('div');
+        div.className = `prepared-bgm-card ${isActive ? 'active' : ''}`;
+        div.innerHTML = `
+          <div class="prepared-clip-head">
+            <strong class="prepared-clip-title" title="${clip.title}">${clip.title}</strong>
+            <span class="pill">trilha</span>
+          </div>
+          <div class="icon-actions">
+            <button data-action="bgmclip-play" data-clip-id="${clip.id}" class="btn-success icon-btn" title="Tocar">▶</button>
+            <button data-action="bgmclip-pause" data-clip-id="${clip.id}" class="icon-btn" title="Pausar">⏸</button>
+            <button data-action="bgmclip-delete" data-clip-id="${clip.id}" class="btn-danger icon-btn" title="Excluir">🗑</button>
+          </div>
+        `;
+        els.preparedBgmList.appendChild(div);
+      });
+    }
+
+    function playPreparedBgm(clipId) {
+      if (!requireMaster()) return;
+      const clip = getPreparedBgmClips().find((entry) => entry.id === clipId);
+      if (!clip) return;
+      if (getCueState().src) {
+        state.media.set('cuePlaying', false);
+        state.media.set('cueVisible', false);
+        state.media.set('cueWasPlayingBgm', false);
+      }
+      state.media.set('bgmType', 'audio-file');
+      state.media.set('bgmSrc', clip.src);
+      state.media.set('bgmTitle', clip.title);
+      state.media.set('bgmClipId', clip.id);
+      state.media.set('bgmVisible', true);
+      state.media.set('bgmPlaying', true);
+      state.media.set('bgmCurrentTime', 0);
+      state.media.set('bgmDuration', 0);
+      setBgmStatus(`Trilha tocando: ${clip.title}`);
+      handleMediaStateChange(true);
+      renderPreparedBgmList();
+    }
+
+    async function addPreparedAudioFiles(files) {
+      if (!requireMaster() || !files?.length) return;
+      const clips = getPreparedAudioClips();
+      for (const file of files) {
+        const src = await fileToDataURL(file);
+        clips.push({
+          id: uid('clip'),
+          title: file.name,
+          src,
+          type: 'audio-file',
+        });
+      }
+      setPreparedAudioClips(clips);
+      renderPreparedAudioList();
+    }
+
+    function renderPreparedAudioList() {
+      if (!els.preparedAudioList) return;
+      const clips = getPreparedAudioClips();
+      const cueState = getCueState();
+      if (!clips.length) {
+        els.preparedAudioList.innerHTML = '<div class="empty-state">Nenhum áudio rápido preparado ainda.</div>';
+        return;
+      }
+      els.preparedAudioList.innerHTML = '';
+      clips.forEach((clip) => {
+        const isActive = cueState.clipId === clip.id;
+        const div = document.createElement('div');
+        div.className = `prepared-clip-card ${isActive ? 'active' : ''}`;
+        div.innerHTML = `
+          <div class="prepared-clip-head">
+            <strong class="prepared-clip-title" title="${clip.title}">${clip.title}</strong>
+            <span class="pill">rápido</span>
+          </div>
+          <div class="icon-actions">
+            <button data-action="clip-play" data-clip-id="${clip.id}" class="btn-success icon-btn" title="Tocar">▶</button>
+            <button data-action="clip-pause" data-clip-id="${clip.id}" class="icon-btn" title="Pausar">⏸</button>
+            <button data-action="clip-delete" data-clip-id="${clip.id}" class="btn-danger icon-btn" title="Excluir">🗑</button>
+          </div>
+        `;
+        els.preparedAudioList.appendChild(div);
+      });
+    }
+
+    function loadPreparedClip(target, clipId, autoplay = false) {
+      if (!requireMaster()) return;
+      const clip = getPreparedAudioClips().find((entry) => entry.id === clipId);
+      if (!clip) return;
+      const bgmState = getBgmState();
+      const bgmWasPlaying = bgmState.visible && bgmState.playing;
+      if (cueAudioEl) state.media.set('cueCurrentTime', Number((cueAudioEl.currentTime || 0).toFixed(2)));
+      if (cueVideoEl) state.media.set('cueCurrentTime', Number((cueVideoEl.currentTime || 0).toFixed(2)));
+      state.media.set('cueType', 'audio-file');
+      state.media.set('cueSrc', clip.src);
+      state.media.set('cueTitle', clip.title);
+      state.media.set('cueClipId', clip.id);
+      state.media.set('cueVisible', autoplay);
+      state.media.set('cuePlaying', autoplay);
+      state.media.set('cueCurrentTime', 0);
+      state.media.set('cueDuration', 0);
+      state.media.set('cueResumeBgm', true);
+      state.media.set('cueWasPlayingBgm', bgmWasPlaying);
+      if (bgmWasPlaying) {
+        if (bgmAudioEl) state.media.set('bgmCurrentTime', Number((bgmAudioEl.currentTime || 0).toFixed(2)));
+        state.media.set('bgmPlaying', false);
+      }
+      setCueStatus(autoplay ? `Áudio rápido tocando: ${clip.title}` : `Áudio rápido pronto: ${clip.title}`);
+      handleMediaStateChange(true);
+      renderPreparedAudioList();
+      renderPreparedBgmList();
+    }
+
+    function setRoleUI() {
+      document.body.classList.toggle('role-player', !state.isMaster);
+      els.roleSelect.value = state.role;
+      els.roleStatus.textContent = state.isMaster
+        ? 'Modo mestre ativo. Você controla mapa, grid, tokens e mídia.'
+        : 'Modo player ativo. Você vê apenas o que o mestre abriu na mesa.';
+    }
+
+    function requireMaster() {
+      return !!state.isMaster;
+    }
+
+    function syncLauncherFieldsFromMain() {
+      els.launcherRoomInput.value = els.roomInput.value || '';
+      els.launcherNameInput.value = els.nameInput.value || '';
+      els.launcherMasterKeyInput.value = els.masterKeyInput.value || '';
+    }
+
+    function syncMainFieldsFromLauncher() {
+      els.roomInput.value = (els.launcherRoomInput.value || '').trim();
+      els.nameInput.value = (els.launcherNameInput.value || '').trim();
+      els.masterKeyInput.value = els.launcherMasterKeyInput.value || '';
+      localStorage.setItem('opvtt-master-key', els.masterKeyInput.value || '');
+    }
+
+    function openLauncher() {
+      syncLauncherFieldsFromMain();
+      els.roomLauncher.classList.add('open');
+    }
+
+    function closeLauncher() {
+      els.roomLauncher.classList.remove('open');
+    }
+
+    function parseYouTubeVideoId(raw = '') {
+      try {
+        const value = raw.trim();
+        if (!value) return null;
+        if (/^[a-zA-Z0-9_-]{11}$/.test(value)) return value;
+        const url = new URL(value);
+        if (url.hostname.includes('youtu.be')) return url.pathname.slice(1) || null;
+        if (url.searchParams.get('v')) return url.searchParams.get('v');
+        const parts = url.pathname.split('/').filter(Boolean);
+        const embedIndex = parts.indexOf('embed');
+        if (embedIndex >= 0 && parts[embedIndex + 1]) return parts[embedIndex + 1];
+        const shortsIndex = parts.indexOf('shorts');
+        if (shortsIndex >= 0 && parts[shortsIndex + 1]) return parts[shortsIndex + 1];
+      } catch {}
+      return null;
+    }
+
+    function parseGoogleDrivePreview(raw = '') {
+      try {
+        const value = raw.trim();
+        if (!value) return null;
+        const url = new URL(value);
+        let fileId = null;
+        const pathMatch = url.pathname.match(/\/file\/d\/([^/]+)/);
+        if (pathMatch?.[1]) fileId = pathMatch[1];
+        if (!fileId) fileId = url.searchParams.get('id');
+        if (!fileId) return null;
+        return {
+          fileId,
+          previewUrl: `https://drive.google.com/file/d/${fileId}/preview`,
+        };
+      } catch {}
+      return null;
+    }
+
+    function canUseHtml5Media(type) {
+      return ['audio-url', 'audio-file', 'video-url', 'video-file'].includes(type);
+    }
+
+    function isFileMediaType(type) {
+      return ['audio-file', 'video-file'].includes(type);
+    }
+
+    function updateMediaFormVisibility() {
+      if (els.bgmFileField) els.bgmFileField.hidden = false;
+      if (els.cueFileField) els.cueFileField.hidden = false;
+      if (els.cueFileLabel) els.cueFileLabel.textContent = 'Arquivo da cena';
+    }
+
+    function hexToRgbComponents(hex = '#9ecbff') {
+      const normalized = String(hex || '').trim();
+      const expanded = normalized.length === 4
+        ? `#${normalized[1]}${normalized[1]}${normalized[2]}${normalized[2]}${normalized[3]}${normalized[3]}`
+        : normalized;
+      const match = expanded.match(/^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i);
+      if (!match) return { r: 158, g: 203, b: 255 };
+      return { r: parseInt(match[1], 16), g: parseInt(match[2], 16), b: parseInt(match[3], 16) };
+    }
+
+    function prettyBytes(base64 = '') {
+      const bytes = Math.floor((base64.length * 3) / 4);
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    function fileToDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function loadImageMeta(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    function initials(name = '') {
+      const parts = name.trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return '?';
+      return parts.slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
+    }
+
+    function computeGridGuess(width, height) {
+      let best = null;
+      for (let cols = 10; cols <= 50; cols++) {
+        for (let rows = 8; rows <= 40; rows++) {
+          const cell = Math.min(width / cols, height / rows);
+          if (cell < 36 || cell > 128) continue;
+          const usedW = cols * cell;
+          const usedH = rows * cell;
+          const leftover = Math.abs(width - usedW) + Math.abs(height - usedH);
+          const sizeBias = Math.abs(cell - 70);
+          const aspectBias = Math.abs((width / height) - (cols / rows)) * 250;
+          const score = leftover * 4 + sizeBias * 1.7 + aspectBias;
+          if (!best || score < best.score) {
+            best = { cols, rows, cell, score };
+          }
+        }
+      }
+      if (!best) {
+        const cell = Math.max(48, Math.round(width / 20));
+        const cols = Math.max(1, Math.round(width / cell));
+        const rows = Math.max(1, Math.round(height / cell));
+        best = { cols, rows, cell };
+      }
+      return {
+        cols: best.cols,
+        rows: best.rows,
+        cell: Number(best.cell.toFixed(3)),
+        offsetX: Number(((width - best.cols * best.cell) / 2).toFixed(3)),
+        offsetY: Number(((height - best.rows * best.cell) / 2).toFixed(3)),
+        opacity: 0.45,
+        visible: true,
+        color: '#9ecbff',
+      };
+    }
+
+    function computeGridFromColsRows(map, cols, rows, opacity = 0.45) {
+      const safeCols = Math.max(1, Math.round(cols));
+      const safeRows = Math.max(1, Math.round(rows));
+      const cell = Math.min(map.width / safeCols, map.height / safeRows);
+      return {
+        cols: safeCols,
+        rows: safeRows,
+        cell: Number(cell.toFixed(3)),
+        offsetX: Number(((map.width - safeCols * cell) / 2).toFixed(3)),
+        offsetY: Number(((map.height - safeRows * cell) / 2).toFixed(3)),
+        opacity,
+        visible: true,
+        color: map.grid?.color || '#9ecbff',
+      };
+    }
+
+    function computeGridFromWidthSquares(map, cols, opacity = 0.45) {
+      const safeCols = Math.max(1, Math.round(cols));
+      const rawCell = map.width / safeCols;
+      const rows = Math.max(1, Math.round(map.height / rawCell));
+      const cell = Math.min(rawCell, map.height / rows);
+      return {
+        cols: safeCols,
+        rows,
+        cell: Number(cell.toFixed(3)),
+        offsetX: Number(((map.width - safeCols * cell) / 2).toFixed(3)),
+        offsetY: Number(((map.height - rows * cell) / 2).toFixed(3)),
+        opacity,
+        visible: true,
+        color: map.grid?.color || '#9ecbff',
+      };
+    }
+
+    function getAllMaps() {
+      return Array.from(state.maps?.values?.() || []).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    }
+
+    function getAllTokens() {
+      return Array.from(state.tokens?.values?.() || []).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    }
+
+    function getCurrentMapId() {
+      return state.scene?.get('currentMapId') || null;
+    }
+
+    function getCurrentMap() {
+      const id = getCurrentMapId();
+      if (!id || !state.maps) return null;
+      return state.maps.get(id) || null;
+    }
+
+    function ensureDefaults() {
+      if (!state.scene.has('gridEnabled')) state.scene.set('gridEnabled', true);
+      if (!state.meta.get('title')) state.meta.set('title', 'Ordem Paranormal VTT');
+      if (!state.scene.has('preparedAudioClips')) state.scene.set('preparedAudioClips', '[]');
+      if (!state.scene.has('preparedBgmClips')) state.scene.set('preparedBgmClips', '[]');
+      if (!state.media.has('bgmDuration')) state.media.set('bgmDuration', 0);
+      if (!state.media.has('cueDuration')) state.media.set('cueDuration', 0);
+      const defaults = {
+        bgmVisible: false,
+        bgmPlaying: false,
+        bgmType: '',
+        bgmSrc: '',
+        bgmCurrentTime: 0,
+        bgmTitle: '',
+        bgmClipId: '',
+        cueVisible: false,
+        cuePlaying: false,
+        cueType: '',
+        cueSrc: '',
+        cueCurrentTime: 0,
+        cueTitle: '',
+        cueResumeBgm: true,
+        cueWasPlayingBgm: false,
+      };
+      Object.entries(defaults).forEach(([key, value]) => {
+        if (!state.media.has(key)) state.media.set(key, value);
+      });
+      if (!getCurrentMapId()) {
+        const firstMap = getAllMaps()[0];
+        if (firstMap) state.scene.set('currentMapId', firstMap.id);
+      }
+    }
+
+    function setConnectionStatus(text, ok = false) {
+      els.connectionStatus.textContent = text;
+      els.connectionStatus.style.color = ok ? '#86efac' : 'var(--muted)';
+    }
+
+    function applyViewportTransform() {
+      const { x, y, zoom } = state.localView;
+      els.stage.style.transform = `translate(${x}px, ${y}px) scale(${zoom})`;
+      els.zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
+    }
+
+    function fitCurrentMapToView() {
+      const map = getCurrentMap();
+      if (!map) return;
+      const viewW = els.viewport.clientWidth;
+      const viewH = els.viewport.clientHeight;
+      const pad = 32;
+      const scale = Math.min((viewW - pad * 2) / map.width, (viewH - pad * 2) / map.height);
+      state.localView.zoom = clamp(scale || 1, 0.15, 4);
+      state.localView.x = (viewW - map.width * state.localView.zoom) / 2;
+      state.localView.y = (viewH - map.height * state.localView.zoom) / 2;
+      applyViewportTransform();
+    }
+
+    function imageToViewportCoords(imageX, imageY) {
+      return {
+        x: state.localView.x + imageX * state.localView.zoom,
+        y: state.localView.y + imageY * state.localView.zoom,
+      };
+    }
+
+    function viewportToImageCoords(clientX, clientY) {
+      const rect = els.viewport.getBoundingClientRect();
+      return {
+        x: (clientX - rect.left - state.localView.x) / state.localView.zoom,
+        y: (clientY - rect.top - state.localView.y) / state.localView.zoom,
+      };
+    }
+
+    function snapImageToGrid(imageX, imageY, tokenSize = 1, grid = null) {
+      const map = getCurrentMap();
+      const activeGrid = grid || map?.grid;
+      if (!map || !activeGrid) return { gx: 0, gy: 0, imageX: 0, imageY: 0 };
+      const maxGX = Math.max(0, activeGrid.cols - tokenSize);
+      const maxGY = Math.max(0, activeGrid.rows - tokenSize);
+      const rawGX = (imageX - activeGrid.offsetX) / activeGrid.cell;
+      const rawGY = (imageY - activeGrid.offsetY) / activeGrid.cell;
+      const gx = clamp(Math.round(rawGX), 0, maxGX);
+      const gy = clamp(Math.round(rawGY), 0, maxGY);
+      return {
+        gx,
+        gy,
+        imageX: activeGrid.offsetX + gx * activeGrid.cell,
+        imageY: activeGrid.offsetY + gy * activeGrid.cell,
+      };
+    }
+
+    function formatDistanceSquares(dx, dy) {
+      const distanceQ = Math.round(Math.hypot(dx, dy));
+      const distanceMeters = (distanceQ * 1.5).toFixed(distanceQ % 2 === 0 ? 0 : 1).replace('.', ',');
+      return `${distanceQ} q · ${distanceMeters} m`;
+    }
+
+    function updatePresence() {
+      if (!state.provider) {
+        els.presenceList.innerHTML = '<div class="empty-state">Entre em uma sala para ver quem está conectado.</div>';
+        return;
+      }
+      const states = Array.from(state.provider.awareness.getStates().values());
+      if (!states.length) {
+        els.presenceList.innerHTML = '<div class="empty-state">Ninguém na sala ainda.</div>';
+        return;
+      }
+      els.presenceList.innerHTML = '';
+      states.forEach((entry) => {
+        const user = entry.user || {};
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="presence-meta">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:12px;height:12px;border-radius:999px;background:${user.color || '#8b5cf6'};display:inline-block;border:2px solid rgba(255,255,255,.7);"></span>
+              <strong style="color:var(--text);font-size:13px;">${user.name || 'Anônimo'}</strong>
+            </div>
+            <span>${user.role === 'master' ? 'mestre' : (entry.cursor ? 'ativo' : 'online')}</span>
+          </div>
+        `;
+        els.presenceList.appendChild(card);
+      });
+    }
+
+    function renderCursors() {
+      els.cursorLayer.innerHTML = '';
+      const map = getCurrentMap();
+      if (!state.provider || !map) return;
+      const awarenessEntries = Array.from(state.provider.awareness.getStates().entries());
+      const currentClient = state.provider.doc.clientID;
+      awarenessEntries.forEach(([clientId, data]) => {
+        if (clientId === currentClient) return;
+        if (!data?.cursor || data.cursor.mapId !== map.id) return;
+        const cursorPoint = imageToViewportCoords(data.cursor.imageX, data.cursor.imageY);
+        const cursor = document.createElement('div');
+        cursor.className = 'cursor';
+        cursor.style.left = `${cursorPoint.x}px`;
+        cursor.style.top = `${cursorPoint.y}px`;
+        cursor.innerHTML = `
+          <div class="cursor-dot" style="background:${data.user?.color || '#ffffff'}"></div>
+          <div class="cursor-label">${data.user?.name || 'Jogador'}</div>
+        `;
+        els.cursorLayer.appendChild(cursor);
+      });
+    }
+
+    function renderGridOverlay() {
+      const map = getCurrentMap();
+      if (!map) {
+        els.gridOverlay.style.display = 'none';
+        return;
+      }
+      const sceneGridEnabled = state.scene.get('gridEnabled') !== false;
+      const grid = map.grid;
+      els.gridOverlay.style.display = sceneGridEnabled && grid?.visible !== false ? 'block' : 'none';
+      if (!grid) return;
+      const color = grid.color || '#9ecbff';
+      const { r, g, b } = hexToRgbComponents(color);
+      els.gridOverlay.style.left = `${grid.offsetX}px`;
+      els.gridOverlay.style.top = `${grid.offsetY}px`;
+      els.gridOverlay.style.width = `${grid.cols * grid.cell}px`;
+      els.gridOverlay.style.height = `${grid.rows * grid.cell}px`;
+      els.gridOverlay.style.backgroundSize = `${grid.cell}px ${grid.cell}px`;
+      els.gridOverlay.style.opacity = `${grid.opacity ?? 0.45}`;
+      els.gridOverlay.style.backgroundImage = `linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0.9) 1px, transparent 1px), linear-gradient(to bottom, rgba(${r}, ${g}, ${b}, 0.9) 1px, transparent 1px)`;
+      els.gridOverlay.style.boxShadow = `0 0 0 1px rgba(${r}, ${g}, ${b}, 0.85) inset`;
+      els.gridOverlay.style.setProperty('--cell', `${grid.cell}px`);
+      els.toggleGridBtn.textContent = sceneGridEnabled ? 'Ocultar grid' : 'Mostrar grid';
+    }
+
+    function renderMap() {
+      const map = getCurrentMap();
+      state.currentMap = map;
+      state.selectedMapId = map?.id || null;
+      if (!map) {
+        els.mapImage.removeAttribute('src');
+        els.mapImage.style.width = '0px';
+        els.mapImage.style.height = '0px';
+        els.stage.style.width = '0px';
+        els.stage.style.height = '0px';
+        renderGridOverlay();
+        renderGridControls();
+        renderTokens();
+        renderCurrentMapMeta();
+        handleMediaStateChange();
+        return;
+      }
+      els.mapImage.src = map.src;
+      els.mapImage.style.width = `${map.width}px`;
+      els.mapImage.style.height = `${map.height}px`;
+      els.stage.style.width = `${map.width}px`;
+      els.stage.style.height = `${map.height}px`;
+      renderGridOverlay();
+      renderTokens();
+      renderMapList();
+      renderGridControls();
+      renderCursors();
+      renderCurrentMapMeta();
+      handleMediaStateChange();
+      if (!els.mapImage.dataset.fitted || els.mapImage.dataset.fitted !== map.id) {
+        els.mapImage.dataset.fitted = map.id;
+        fitCurrentMapToView();
+      }
+    }
+
+    function renderCurrentMapMeta() {
+      const map = getCurrentMap();
+      if (!map) {
+        els.currentMapMeta.textContent = 'Nenhum mapa carregado.';
+        return;
+      }
+      const ratioSimple = reduceRatio(map.width, map.height);
+      const ratioDecimal = formatAspectRatio(map.width, map.height);
+      els.currentMapMeta.innerHTML = `
+        <strong style="display:block;color:var(--text);font-size:13px;">${map.name}</strong>
+        ${map.width} × ${map.height} px · proporção ${ratioSimple} (${ratioDecimal})<br>
+        Grid atual ${map.grid.cols} × ${map.grid.rows} · célula ${map.grid.cell.toFixed(1)} px
+      `;
+    }
+
+    let bgmAudioEl = null;
+    let cueAudioEl = null;
+    let cueVideoEl = null;
+    let ytScriptPromise = null;
+    let bgmYtPlayer = null;
+    let cueYtPlayer = null;
+    let bgmYtReady = false;
+    let cueYtReady = false;
+    let bgmSyncTimer = null;
+    let cueSyncTimer = null;
+    let lastBgmRenderSignature = '';
+    let lastCueRenderSignature = '';
+
+    function ensureYouTubeApi() {
+      if (window.YT?.Player) return Promise.resolve(window.YT);
+      if (ytScriptPromise) return ytScriptPromise;
+      ytScriptPromise = new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(script);
+        const prev = window.onYouTubeIframeAPIReady;
+        window.onYouTubeIframeAPIReady = () => {
+          prev?.();
+          resolve(window.YT);
+        };
+      });
+      return ytScriptPromise;
+    }
+
+    function getBgmState() {
+      if (!state.media) return { visible: false, type: '', src: '', playing: false, currentTime: 0, title: '' };
+      return {
+        visible: state.media.get('bgmVisible') === true,
+        type: state.media.get('bgmType') || '',
+        src: state.media.get('bgmSrc') || '',
+        playing: state.media.get('bgmPlaying') === true,
+        currentTime: Number(state.media.get('bgmCurrentTime') || 0),
+        duration: Number(state.media.get('bgmDuration') || 0),
+        title: state.media.get('bgmTitle') || '',
+        clipId: state.media.get('bgmClipId') || '',
+      };
+    }
+
+    function getCueState() {
+      if (!state.media) return { visible: false, type: '', src: '', playing: false, currentTime: 0, title: '', resumeBgm: true, wasPlayingBgm: false };
+      return {
+        visible: state.media.get('cueVisible') === true,
+        type: state.media.get('cueType') || '',
+        src: state.media.get('cueSrc') || '',
+        playing: state.media.get('cuePlaying') === true,
+        currentTime: Number(state.media.get('cueCurrentTime') || 0),
+        duration: Number(state.media.get('cueDuration') || 0),
+        title: state.media.get('cueTitle') || '',
+        clipId: state.media.get('cueClipId') || '',
+        resumeBgm: state.media.get('cueResumeBgm') !== false,
+        wasPlayingBgm: state.media.get('cueWasPlayingBgm') === true,
+      };
+    }
+
+    function setBgmStatus(text) { els.bgmStatus.textContent = text; }
+    function setCueStatus(text) { els.cueStatus.textContent = text; }
+
+    function formatClock(totalSeconds = 0) {
+      const safe = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+      const min = Math.floor(safe / 60).toString().padStart(2, '0');
+      const sec = (safe % 60).toString().padStart(2, '0');
+      return `${min}:${sec}`;
+    }
+
+    function updateSeekUi() {
+      const bgmState = getBgmState();
+      const cueState = getCueState();
+      const bgmDuration = Number(bgmState.duration || 0);
+      const cueDuration = Number(cueState.duration || 0);
+      if (els.bgmSeekInput) {
+        els.bgmSeekInput.max = String(Math.max(0, bgmDuration));
+        els.bgmSeekInput.value = String(Math.min(Number(bgmState.currentTime || 0), Math.max(0, bgmDuration)));
+        els.bgmSeekInput.disabled = !(bgmState.visible && bgmState.src && bgmDuration > 0);
+      }
+      if (els.cueSeekInput) {
+        els.cueSeekInput.max = String(Math.max(0, cueDuration));
+        els.cueSeekInput.value = String(Math.min(Number(cueState.currentTime || 0), Math.max(0, cueDuration)));
+        els.cueSeekInput.disabled = !(cueState.src && cueDuration > 0);
+      }
+      if (els.bgmTimeLabel) els.bgmTimeLabel.textContent = `${formatClock(bgmState.currentTime)} / ${formatClock(bgmDuration)}`;
+      if (els.cueTimeLabel) els.cueTimeLabel.textContent = `${formatClock(cueState.currentTime)} / ${formatClock(cueDuration)}`;
+    }
+
+    function seekBgmTo(value) {
+      const safe = Math.max(0, Number(value || 0));
+      state.media.set('bgmCurrentTime', Number(safe.toFixed(2)));
+      if (bgmAudioEl) {
+        try { bgmAudioEl.currentTime = safe; } catch {}
+      }
+      updateSeekUi();
+      handleMediaStateChange();
+    }
+
+    function seekCueTo(value) {
+      const safe = Math.max(0, Number(value || 0));
+      state.media.set('cueCurrentTime', Number(safe.toFixed(2)));
+      if (cueAudioEl) {
+        try { cueAudioEl.currentTime = safe; } catch {}
+      }
+      if (cueVideoEl) {
+        try { cueVideoEl.currentTime = safe; } catch {}
+      }
+      updateSeekUi();
+      handleMediaStateChange();
+    }
+
+    function stopBgmSyncLoop() {
+      if (bgmSyncTimer) { clearInterval(bgmSyncTimer); bgmSyncTimer = null; }
+    }
+
+    function stopCueSyncLoop() {
+      if (cueSyncTimer) { clearInterval(cueSyncTimer); cueSyncTimer = null; }
+    }
+
+    function startBgmSyncLoop(type) {
+      stopBgmSyncLoop();
+      if (!state.isMaster) return;
+      if (!['audio-url', 'audio-file'].includes(type)) return;
+      bgmSyncTimer = setInterval(() => {
+        if (!state.media || state.media.get('bgmPlaying') !== true) return;
+        if (type === 'youtube' && bgmYtPlayer && bgmYtReady && typeof bgmYtPlayer.getCurrentTime === 'function') {
+          state.media.set('bgmCurrentTime', Number((bgmYtPlayer.getCurrentTime() || 0).toFixed(2)));
+          return;
+        }
+        if (bgmAudioEl) {
+          state.media.set('bgmDuration', Number((bgmAudioEl.duration || 0).toFixed(2)));
+          if (!bgmAudioEl.paused) {
+            state.media.set('bgmCurrentTime', Number((bgmAudioEl.currentTime || 0).toFixed(2)));
+          }
+        }
+      }, 500);
+    }
+
+    function startCueSyncLoop(type) {
+      stopCueSyncLoop();
+      if (!state.isMaster) return;
+      if (!['audio-url', 'audio-file', 'video-url', 'video-file'].includes(type)) return;
+      cueSyncTimer = setInterval(() => {
+        if (!state.media || state.media.get('cuePlaying') !== true) return;
+        if (type === 'youtube' && cueYtPlayer && cueYtReady && typeof cueYtPlayer.getCurrentTime === 'function') {
+          state.media.set('cueCurrentTime', Number((cueYtPlayer.getCurrentTime() || 0).toFixed(2)));
+          return;
+        }
+        const mediaEl = (type === 'video-url' || type === 'video-file') ? cueVideoEl : cueAudioEl;
+        if (mediaEl) {
+          state.media.set('cueDuration', Number((mediaEl.duration || 0).toFixed(2)));
+          if (!mediaEl.paused) {
+            state.media.set('cueCurrentTime', Number((mediaEl.currentTime || 0).toFixed(2)));
+          }
+        }
+      }, 500);
+    }
+
+    function requestMediaReleaseButton(buttonId, label) {
+      return '';
+    }
+
+    async function syncHtml5MediaElement(mediaEl, mediaState, options = {}) {
+      if (!mediaEl) return;
+      if (options.loop) mediaEl.loop = true;
+      if (typeof mediaState.currentTime === 'number' && Math.abs((mediaEl.currentTime || 0) - mediaState.currentTime) > (options.seekTolerance || 1.2)) {
+        try { mediaEl.currentTime = mediaState.currentTime || 0; } catch {}
+      }
+      if (mediaState.playing) {
+        try {
+          await mediaEl.play();
+          hideMediaUnlock();
+        } catch {
+          showMediaUnlock('Clique para liberar mídia neste navegador');
+        }
+      } else {
+        mediaEl.pause();
+      }
+    }
+
+    async function syncYouTubePlayer(player, ready, mediaState, options = {}) {
+      return;
+    }
+
+    function destroyBgmPlayers() {
+      stopBgmSyncLoop();
+      bgmAudioEl = null;
+      if (bgmYtPlayer?.destroy) {
+        try { bgmYtPlayer.destroy(); } catch {}
+      }
+      bgmYtPlayer = null;
+      bgmYtReady = false;
+      lastBgmRenderSignature = '';
+    }
+
+    function destroyCuePlayers() {
+      stopCueSyncLoop();
+      cueAudioEl = null;
+      cueVideoEl = null;
+      if (cueYtPlayer?.destroy) {
+        try { cueYtPlayer.destroy(); } catch {}
+      }
+      cueYtPlayer = null;
+      cueYtReady = false;
+      lastCueRenderSignature = '';
+    }
+
+    function maybeResumeBgmAfterCue() {
+      const cueState = getCueState();
+      const bgmState = getBgmState();
+      if (!cueState.resumeBgm || !cueState.wasPlayingBgm || !bgmState.visible || !bgmState.src) return;
+      state.media.set('bgmPlaying', true);
+      state.media.set('cueWasPlayingBgm', false);
+      renderPreparedAudioList();
+      renderPreparedBgmList();
+    }
+
+    function attachCueEndHandlers(type) {
+      if (type === 'audio-url' || type === 'audio-file') {
+        cueAudioEl?.addEventListener('ended', () => {
+          if (!state.isMaster) return;
+          state.media.set('cuePlaying', false);
+          state.media.set('cueVisible', false);
+          state.media.set('cueCurrentTime', 0);
+          maybeResumeBgmAfterCue();
+        });
+      }
+      if (type === 'video-url' || type === 'video-file') {
+        cueVideoEl?.addEventListener('ended', () => {
+          if (!state.isMaster) return;
+          state.media.set('cuePlaying', false);
+          state.media.set('cueVisible', false);
+          state.media.set('cueCurrentTime', 0);
+          maybeResumeBgmAfterCue();
+        });
+      }
+    }
+
+    async function renderBgmBar(force = false) {
+      const bgmState = getBgmState();
+      const signature = JSON.stringify({ visible: bgmState.visible, type: bgmState.type, src: bgmState.src, title: bgmState.title });
+      if (!bgmState.visible || !bgmState.type || !bgmState.src) {
+        destroyBgmPlayers();
+        els.sharedBgmBar.hidden = true;
+        els.sharedBgmBar.innerHTML = '';
+        return;
+      }
+      if (signature !== lastBgmRenderSignature || force) {
+        lastBgmRenderSignature = signature;
+        els.sharedBgmBar.hidden = false;
+        els.sharedBgmBar.innerHTML = `<audio id="sharedBgmAudio" preload="auto" playsinline src="${bgmState.src}" style="display:none"></audio>`;
+        bgmAudioEl = document.getElementById('sharedBgmAudio');
+        if (bgmAudioEl) bgmAudioEl.addEventListener('loadedmetadata', () => { if (state.isMaster) state.media.set('bgmDuration', Number((bgmAudioEl.duration || 0).toFixed(2))); updateSeekUi(); });
+      }
+      if (bgmState.type === 'audio-url' || bgmState.type === 'audio-file') {
+        await syncHtml5MediaElement(bgmAudioEl, bgmState, { loop: true, seekTolerance: 1.2 });
+        startBgmSyncLoop(bgmState.type);
+      }
+      updateSeekUi();
+    }
+
+    async function renderCueDock(force = false) {
+      const cueState = getCueState();
+      const signature = JSON.stringify({ visible: cueState.visible, type: cueState.type, src: cueState.src, title: cueState.title, playing: cueState.playing });
+      if (!cueState.type || !cueState.src) {
+        destroyCuePlayers();
+        els.sharedCueDock.hidden = true;
+        els.sharedCueDock.classList.remove('video-active');
+        els.sharedCueDock.innerHTML = '';
+        updateSeekUi();
+        return;
+      }
+
+      const isVideo = cueState.type === 'video-url' || cueState.type === 'video-file';
+      if (signature !== lastCueRenderSignature || force) {
+        lastCueRenderSignature = signature;
+        let stageHtml = '';
+        if (cueState.type === 'audio-url' || cueState.type === 'audio-file') {
+          stageHtml = `<audio id="sharedCueAudio" preload="auto" playsinline src="${cueState.src}" style="display:none"></audio>`;
+        } else if (isVideo) {
+          stageHtml = `<video id="sharedCueVideo" preload="auto" playsinline controlslist="nodownload noplaybackrate" src="${cueState.src}"></video>`;
+        }
+        els.sharedCueDock.hidden = !(isVideo && cueState.visible);
+        els.sharedCueDock.classList.toggle('video-active', isVideo && cueState.visible);
+        els.sharedCueDock.innerHTML = (isVideo && cueState.visible) ? `
+          <div class="media-shell">
+            <div class="media-header">
+              <div>
+                <strong style="display:block;color:var(--text);font-size:13px;">${cueState.title || 'Cena pontual'}</strong>
+                <span>${cueState.playing ? 'rodando' : 'pausada'}</span>
+              </div>
+              <span class="role-chip">Cena</span>
+            </div>
+            <div class="media-stage video">${stageHtml}</div>
+            <div class="media-status">Cena exibida em tela cheia para a mesa.</div>
+          </div>
+        ` : stageHtml;
+        cueAudioEl = document.getElementById('sharedCueAudio');
+        cueVideoEl = document.getElementById('sharedCueVideo');
+        attachCueEndHandlers(cueState.type);
+        if (cueAudioEl) cueAudioEl.addEventListener('loadedmetadata', () => { if (state.isMaster) state.media.set('cueDuration', Number((cueAudioEl.duration || 0).toFixed(2))); updateSeekUi(); });
+        if (cueVideoEl) cueVideoEl.addEventListener('loadedmetadata', () => { if (state.isMaster) state.media.set('cueDuration', Number((cueVideoEl.duration || 0).toFixed(2))); updateSeekUi(); });
+      } else {
+        els.sharedCueDock.hidden = !(isVideo && cueState.visible);
+        els.sharedCueDock.classList.toggle('video-active', isVideo && cueState.visible);
+      }
+
+      if (cueState.type === 'audio-url' || cueState.type === 'audio-file') {
+        await syncHtml5MediaElement(cueAudioEl, cueState, { loop: false, seekTolerance: 1.2 });
+        startCueSyncLoop(cueState.type);
+      } else if (isVideo && cueState.visible) {
+        await syncHtml5MediaElement(cueVideoEl, cueState, { loop: false, seekTolerance: 1.2 });
+        startCueSyncLoop(cueState.type);
+      } else {
+        stopCueSyncLoop();
+      }
+      updateSeekUi();
+    }
+
+    function handleMediaStateChange(force = false) {
+      renderBgmBar(force);
+      renderCueDock(force);
+      updateSeekUi();
+      const bgmState = getBgmState();
+      const cueState = getCueState();
+      if ((!bgmState.playing && !cueState.playing) || (!bgmState.visible && !cueState.src)) hideMediaUnlock();
+    }
+
+    async function readMediaSource(type, urlInput, fileInput, statusSetter) {
+      let src = '';
+      let title = '';
+      if (type === 'audio-file' || type === 'video-file') {
+        const file = fileInput.files?.[0];
+        if (!file) {
+          statusSetter('Selecione um arquivo primeiro.');
+          return null;
+        }
+        src = await fileToDataURL(file);
+        title = file.name;
+      } else {
+        src = urlInput.value.trim();
+        if (!src) {
+          statusSetter('Cole um link válido primeiro.');
+          return null;
+        }
+        title = src;
+      }
+      return { src, title };
+    }
+
+    async function loadBgmFromInputs() {
+      if (!requireMaster()) return;
+      const type = els.bgmTypeInput.value;
+      const source = await readMediaSource(type, els.bgmUrlInput, els.bgmFileInput, setBgmStatus);
+      if (!source) return;
+      const { src, title } = source;
+      state.media.set('bgmType', type);
+      state.media.set('bgmSrc', src);
+      state.media.set('bgmTitle', title);
+      state.media.set('bgmVisible', true);
+      state.media.set('bgmPlaying', false);
+      state.media.set('bgmCurrentTime', 0);
+      state.media.set('bgmDuration', 0);
+      state.media.set('bgmClipId', '');
+      setBgmStatus(`Trilha pronta: ${title}`);
+      handleMediaStateChange(true);
+    }
+
+    function clearBgm() {
+      if (!requireMaster()) return;
+      state.media.set('bgmVisible', false);
+      state.media.set('bgmPlaying', false);
+      state.media.set('bgmCurrentTime', 0);
+      state.media.set('bgmType', '');
+      state.media.set('bgmSrc', '');
+      state.media.set('bgmTitle', '');
+      state.media.set('bgmDuration', 0);
+      state.media.set('bgmClipId', '');
+      setBgmStatus('Trilha removida.');
+      handleMediaStateChange(true);
+    }
+
+    function playBgm() {
+      if (!requireMaster()) return;
+      const bgmState = getBgmState();
+      if (!bgmState.visible || !bgmState.src) return;
+      state.media.set('bgmPlaying', true);
+      handleMediaStateChange();
+    }
+
+    function pauseBgm() {
+      if (!requireMaster()) return;
+      state.media.set('bgmPlaying', false);
+      if (bgmAudioEl) state.media.set('bgmCurrentTime', Number((bgmAudioEl.currentTime || 0).toFixed(2)));
+      if (bgmYtPlayer && bgmYtReady && typeof bgmYtPlayer.getCurrentTime === 'function') {
+        state.media.set('bgmCurrentTime', Number((bgmYtPlayer.getCurrentTime() || 0).toFixed(2)));
+      }
+      handleMediaStateChange();
+    }
+
+    function stopBgm() {
+      if (!requireMaster()) return;
+      state.media.set('bgmPlaying', false);
+      state.media.set('bgmCurrentTime', 0);
+      handleMediaStateChange();
+    }
+
+    async function loadCueFromInputs() {
+      if (!requireMaster()) return;
+      updateMediaFormVisibility();
+      const type = els.cueTypeInput.value;
+      const source = await readMediaSource(type, els.cueUrlInput, els.cueFileInput, setCueStatus);
+      if (!source) return;
+      const { src, title } = source;
+      state.media.set('cueType', type);
+      state.media.set('cueSrc', src);
+      state.media.set('cueTitle', title);
+      state.media.set('cueClipId', '');
+      state.media.set('cueVisible', false);
+      state.media.set('cuePlaying', false);
+      state.media.set('cueCurrentTime', 0);
+      state.media.set('cueDuration', 0);
+      state.media.set('cueResumeBgm', els.cueResumeBgmInput.checked);
+      state.media.set('cueWasPlayingBgm', false);
+      setCueStatus(`Cena pronta: ${title}`);
+      handleMediaStateChange(true);
+    }
+
+    function hideCue() {
+      if (!requireMaster()) return;
+      const shouldResume = getCueState().resumeBgm && getCueState().wasPlayingBgm;
+      state.media.set('cueVisible', false);
+      state.media.set('cuePlaying', false);
+      state.media.set('cueCurrentTime', 0);
+      state.media.set('cueType', '');
+      state.media.set('cueSrc', '');
+      state.media.set('cueTitle', '');
+      state.media.set('cueClipId', '');
+      state.media.set('cueDuration', 0);
+      state.media.set('cueWasPlayingBgm', false);
+      if (shouldResume) state.media.set('bgmPlaying', true);
+      setCueStatus('Cena fechada.');
+      handleMediaStateChange(true);
+      renderPreparedAudioList();
+      renderPreparedBgmList();
+    }
+
+    function playCue() {
+      if (!requireMaster()) return;
+      const cueState = getCueState();
+      const bgmState = getBgmState();
+      if (!cueState.src) return;
+      const bgmWasPlaying = bgmState.visible && bgmState.playing;
+      state.media.set('cueResumeBgm', els.cueResumeBgmInput.checked);
+      state.media.set('cueWasPlayingBgm', bgmWasPlaying);
+      if (bgmWasPlaying) {
+        if (bgmAudioEl) state.media.set('bgmCurrentTime', Number((bgmAudioEl.currentTime || 0).toFixed(2)));
+        state.media.set('bgmPlaying', false);
+      }
+      state.media.set('cueVisible', true);
+      state.media.set('cuePlaying', true);
+      handleMediaStateChange();
+      renderPreparedAudioList();
+      renderPreparedBgmList();
+    }
+
+    function pauseCue() {
+      if (!requireMaster()) return;
+      const shouldResume = getCueState().resumeBgm && getCueState().wasPlayingBgm;
+      state.media.set('cuePlaying', false);
+      state.media.set('cueVisible', false);
+      if (cueAudioEl) state.media.set('cueCurrentTime', Number((cueAudioEl.currentTime || 0).toFixed(2)));
+      if (cueVideoEl) state.media.set('cueCurrentTime', Number((cueVideoEl.currentTime || 0).toFixed(2)));
+      state.media.set('cueWasPlayingBgm', false);
+      if (shouldResume) state.media.set('bgmPlaying', true);
+      handleMediaStateChange();
+      renderPreparedAudioList();
+      renderPreparedBgmList();
+    }
+
+    function stopCue() {
+      if (!requireMaster()) return;
+      const shouldResume = getCueState().resumeBgm && getCueState().wasPlayingBgm;
+      state.media.set('cuePlaying', false);
+      state.media.set('cueVisible', false);
+      state.media.set('cueCurrentTime', 0);
+      state.media.set('cueWasPlayingBgm', false);
+      if (shouldResume) state.media.set('bgmPlaying', true);
+      handleMediaStateChange();
+      renderPreparedAudioList();
+      renderPreparedBgmList();
+    }
+
+    function renderMapList() {
+
+      const maps = getAllMaps();
+      if (!maps.length) {
+        els.mapList.innerHTML = '<div class="empty-state">Nenhum mapa na sala ainda. Envie uma arte para começar.</div>';
+        return;
+      }
+      els.mapList.innerHTML = '';
+      maps.forEach((map) => {
+        const div = document.createElement('div');
+        div.className = `card map-card ${map.id === getCurrentMapId() ? 'active' : ''}`;
+        div.innerHTML = `
+          <img class="map-thumb" src="${map.src}" alt="${map.name}" />
+          <div class="map-meta">
+            <div>
+              <strong style="display:block;color:var(--text);font-size:13px;">${map.name}</strong>
+              <span>${map.width}×${map.height} · ${map.grid.cols}×${map.grid.rows}</span>
+            </div>
+            <span>${prettyBytes(map.src)}</span>
+          </div>
+          <div class="row equal" style="margin-top:10px;">
+            <button data-action="activate" data-map-id="${map.id}" class="${map.id === getCurrentMapId() ? 'btn-primary' : ''}">Mostrar</button>
+            <button data-action="delete" data-map-id="${map.id}" class="btn-danger">Apagar</button>
+          </div>
+        `;
+        els.mapList.appendChild(div);
+      });
+    }
+
+    function renderTokens() {
+      const map = getCurrentMap();
+      const tokens = getAllTokens().filter((t) => !t.mapId || t.mapId === map?.id);
+      if (!map) {
+        els.tokenLayer.innerHTML = '';
+        els.tokenList.innerHTML = '<div class="empty-state">Adicione um mapa primeiro.</div>';
+        renderSelectedTokenControls();
+        return;
+      }
+      els.tokenLayer.innerHTML = '';
+      tokens.forEach((token) => {
+        const grid = map.grid;
+        const left = grid.offsetX + token.gx * grid.cell;
+        const top = grid.offsetY + token.gy * grid.cell;
+        const sizePx = token.size * grid.cell;
+        const tokenEl = document.createElement('div');
+        tokenEl.className = `token ${token.id === state.selectedTokenId ? 'selected' : ''}`;
+        tokenEl.dataset.tokenId = token.id;
+        tokenEl.style.left = `${left}px`;
+        tokenEl.style.top = `${top}px`;
+        tokenEl.style.width = `${sizePx}px`;
+        tokenEl.style.height = `${sizePx}px`;
+        tokenEl.style.borderColor = token.color || '#ffffff';
+        tokenEl.innerHTML = `
+          <div class="token-inner">
+            ${token.src
+              ? `<img src="${token.src}" alt="${token.name || 'token'}" />`
+              : `<div class="token-fallback" style="background:${token.color || '#8b5cf6'}">${initials(token.name)}</div>`}
+          </div>
+        `;
+        const label = document.createElement('div');
+        label.className = 'token-label';
+        label.textContent = `${token.name || 'Token'} · ${SIZE_LABELS[token.size] || `${token.size}x${token.size}`}`;
+        tokenEl.appendChild(label);
+        tokenEl.addEventListener('pointerdown', onTokenPointerDown);
+        tokenEl.addEventListener('click', (event) => {
+          event.stopPropagation();
+          if (!requireMaster()) return;
+          state.selectedTokenId = token.id;
+          renderTokens();
+          renderTokenList();
+          renderSelectedTokenControls();
+        });
+        els.tokenLayer.appendChild(tokenEl);
+      });
+      renderTokenList(tokens);
+      renderSelectedTokenControls();
+    }
+
+    function renderTokenList(filteredForMap = null) {
+      const map = getCurrentMap();
+      const tokens = filteredForMap || getAllTokens().filter((t) => !t.mapId || t.mapId === map?.id);
+      if (!map) {
+        els.tokenList.innerHTML = '<div class="empty-state">Os tokens aparecem aqui quando existir um mapa ativo.</div>';
+        return;
+      }
+      if (!tokens.length) {
+        els.tokenList.innerHTML = '<div class="empty-state">Nenhum token neste mapa ainda.</div>';
+        return;
+      }
+      els.tokenList.innerHTML = '';
+      tokens.forEach((token) => {
+        const div = document.createElement('div');
+        div.className = `card token-card ${token.id === state.selectedTokenId ? 'active' : ''}`;
+        div.innerHTML = `
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div class="token-preview">
+              ${token.src ? `<img src="${token.src}" alt="${token.name}" />` : `<div class="token-fallback" style="background:${token.color || '#8b5cf6'};font-size:16px;">${initials(token.name)}</div>`}
+            </div>
+            <div class="grow">
+              <strong style="display:block;color:var(--text);font-size:13px;">${token.name || 'Token'}</strong>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px;">Posição ${token.gx}, ${token.gy} · ${SIZE_LABELS[token.size] || `${token.size}x${token.size}`}</div>
+            </div>
+          </div>
+          <div class="row equal" style="margin-top:10px;">
+            <button data-action="select-token" data-token-id="${token.id}" class="${token.id === state.selectedTokenId ? 'btn-primary' : ''}">Selecionar</button>
+            <button data-action="focus-token" data-token-id="${token.id}">Focar</button>
+          </div>
+        `;
+        els.tokenList.appendChild(div);
+      });
+    }
+
+    function clampTokensForMap(mapId, grid) {
+      const updates = [];
+      state.tokens?.forEach((token, tokenId) => {
+        if (token.mapId && token.mapId !== mapId) return;
+        const maxSize = Math.max(1, Math.min(grid.cols, grid.rows));
+        const size = clamp(Number(token.size || 1), 1, maxSize);
+        const gx = clamp(Number(token.gx || 0), 0, Math.max(0, grid.cols - size));
+        const gy = clamp(Number(token.gy || 0), 0, Math.max(0, grid.rows - size));
+        if (size !== token.size || gx !== token.gx || gy !== token.gy) {
+          updates.push([tokenId, { ...token, size, gx, gy }]);
+        }
+      });
+      updates.forEach(([tokenId, updatedToken]) => state.tokens.set(tokenId, updatedToken));
+    }
+
+    function updateQuickGridPreviewFromCols(rawCols, syncInputs = true) {
+      const map = getCurrentMap();
+      if (!map) {
+        els.gridQuickPreview.textContent = 'Adicione um mapa para usar o ajuste rápido.';
+        return;
+      }
+      const maxByWidth = Math.max(20, Math.ceil(map.width / 20));
+      const cols = clamp(Math.round(Number(rawCols) || map.grid.cols || 20), 1, maxByWidth);
+      const opacity = Number(els.gridOpacityInput.value || map.grid.opacity || 0.45);
+      const computed = computeGridFromWidthSquares(map, cols, opacity);
+      els.gridQuickColsRange.min = '1';
+      els.gridQuickColsRange.max = String(maxByWidth);
+      els.gridQuickColsRange.value = String(computed.cols);
+      els.gridQuickColsNumber.min = '1';
+      els.gridQuickColsNumber.max = String(maxByWidth);
+      els.gridQuickColsNumber.value = String(computed.cols);
+      els.gridQuickPreview.textContent = `Resultado automático: ${computed.cols} col × ${computed.rows} lin · ${computed.cell.toFixed(1)} px por quadrado`;
+      if (syncInputs) {
+        els.gridColsInput.value = String(computed.cols);
+        els.gridRowsInput.value = String(computed.rows);
+        els.gridOffsetXInput.value = String(computed.offsetX);
+        els.gridOffsetYInput.value = String(computed.offsetY);
+      }
+    }
+
+    function renderGridControls() {
+      const map = getCurrentMap();
+      if (!map) {
+        els.gridQuickColsRange.value = '20';
+        els.gridQuickColsNumber.value = '20';
+        els.gridQuickPreview.textContent = 'Adicione um mapa para usar o ajuste rápido.';
+        els.gridColsInput.value = '';
+        els.gridRowsInput.value = '';
+        els.gridOffsetXInput.value = '';
+        els.gridOffsetYInput.value = '';
+        els.gridOpacityInput.value = 0.45;
+        return;
+      }
+      els.gridColsInput.value = map.grid.cols;
+      els.gridRowsInput.value = map.grid.rows;
+      els.gridOffsetXInput.value = map.grid.offsetX;
+      els.gridOffsetYInput.value = map.grid.offsetY;
+      els.gridOpacityInput.value = map.grid.opacity ?? 0.45;
+      els.gridColorInput.value = map.grid.color || '#9ecbff';
+      updateQuickGridPreviewFromCols(map.grid.cols, false);
+    }
+
+    function renderSelectedTokenControls() {
+      const token = state.selectedTokenId ? state.tokens.get(state.selectedTokenId) : null;
+      if (!token) {
+        els.selectedTokenEmpty.hidden = false;
+        els.selectedTokenControls.hidden = true;
+        return;
+      }
+      els.selectedTokenEmpty.hidden = true;
+      els.selectedTokenControls.hidden = false;
+      els.selectedTokenName.value = token.name || '';
+      els.selectedTokenSize.value = token.size || 1;
+      els.selectedTokenX.value = token.gx || 0;
+      els.selectedTokenY.value = token.gy || 0;
+    }
+
+    function renderAll() {
+      renderMapList();
+      renderMap();
+      renderPreparedAudioList();
+      renderPreparedBgmList();
+      updatePresence();
+      renderCursors();
+    }
+
+    function setCurrentMap(mapId) {
+      if (!requireMaster() || !state.maps?.has(mapId)) return;
+      state.scene.set('currentMapId', mapId);
+      renderMap();
+      renderMapList();
+    }
+
+    async function addMaps(files) {
+      if (!requireMaster() || !files?.length || !state.maps) return;
+      const mapObjects = [];
+      for (const file of files) {
+        const src = await fileToDataURL(file);
+        const { width, height } = await loadImageMeta(src);
+        const map = {
+          id: uid('map'),
+          name: file.name.replace(/\.[^.]+$/, ''),
+          src,
+          width,
+          height,
+          grid: computeGridGuess(width, height),
+          createdAt: Date.now(),
+          createdBy: els.nameInput.value.trim() || 'Mestre',
+        };
+        mapObjects.push(map);
+      }
+      mapObjects.forEach((map) => state.maps.set(map.id, map));
+      if (!getCurrentMapId() && mapObjects[0]) {
+        state.scene.set('currentMapId', mapObjects[0].id);
+      } else if (mapObjects[0]) {
+        state.scene.set('currentMapId', mapObjects[0].id);
+      }
+      renderAll();
+    }
+
+    async function addToken() {
+      if (!requireMaster()) return;
+      const map = getCurrentMap();
+      if (!map || !state.tokens) return;
+      const file = els.tokenImageUpload.files?.[0] || null;
+      const src = file ? await fileToDataURL(file) : null;
+      const name = els.tokenNameInput.value.trim() || (file ? file.name.replace(/\.[^.]+$/, '') : 'Token');
+      const size = Number(els.tokenSizeInput.value || 1);
+      const token = {
+        id: uid('token'),
+        mapId: map.id,
+        name,
+        size,
+        gx: Math.max(0, Math.floor((map.grid.cols - size) / 2)),
+        gy: Math.max(0, Math.floor((map.grid.rows - size) / 2)),
+        src,
+        color: els.tokenColorInput.value,
+        createdAt: Date.now(),
+        createdBy: els.nameInput.value.trim() || 'Mestre',
+      };
+      state.tokens.set(token.id, token);
+      state.selectedTokenId = token.id;
+      els.tokenImageUpload.value = '';
+      els.tokenNameInput.value = '';
+      renderTokens();
+      renderTokenList();
+      renderSelectedTokenControls();
+    }
+
+    function applyGridSettingsFromInputs() {
+      if (!requireMaster()) return;
+      const map = getCurrentMap();
+      if (!map) return;
+      const updated = {
+        ...map,
+        grid: {
+          ...map.grid,
+          color: els.gridColorInput.value || map.grid.color || '#9ecbff',
+          opacity: Number(els.gridOpacityInput.value || map.grid.opacity || 0.45),
+        },
+      };
+      state.maps.set(map.id, updated);
+      renderGridOverlay();
+    }
+
+    function applyGridFromInputs() {
+      if (!requireMaster()) return;
+      const map = getCurrentMap();
+      if (!map) return;
+      const cols = Math.max(1, Number(els.gridColsInput.value || map.grid.cols));
+      const rows = Math.max(1, Number(els.gridRowsInput.value || map.grid.rows));
+      const opacity = Number(els.gridOpacityInput.value || map.grid.opacity || 0.45);
+      const baseGrid = computeGridFromColsRows(map, cols, rows, opacity);
+      const updated = {
+        ...map,
+        grid: {
+          ...baseGrid,
+          color: els.gridColorInput.value || map.grid.color || '#9ecbff',
+          offsetX: Number(els.gridOffsetXInput.value || baseGrid.offsetX),
+          offsetY: Number(els.gridOffsetYInput.value || baseGrid.offsetY),
+        },
+      };
+      clampTokensForMap(map.id, updated.grid);
+      state.maps.set(map.id, updated);
+      renderMap();
+    }
+
+    function autoGridCurrentMap() {
+      if (!requireMaster()) return;
+      const map = getCurrentMap();
+      if (!map) return;
+      const guessed = computeGridGuess(map.width, map.height);
+      clampTokensForMap(map.id, guessed);
+      const updated = { ...map, grid: guessed };
+      state.maps.set(map.id, updated);
+      renderMap();
+    }
+
+    function saveSelectedToken() {
+      if (!requireMaster()) return;
+      const token = state.selectedTokenId ? state.tokens.get(state.selectedTokenId) : null;
+      const map = getCurrentMap();
+      if (!token || !map) return;
+      const size = Number(els.selectedTokenSize.value || token.size || 1);
+      const gx = clamp(Number(els.selectedTokenX.value || token.gx || 0), 0, Math.max(0, map.grid.cols - size));
+      const gy = clamp(Number(els.selectedTokenY.value || token.gy || 0), 0, Math.max(0, map.grid.rows - size));
+      state.tokens.set(token.id, {
+        ...token,
+        name: els.selectedTokenName.value.trim() || token.name,
+        size,
+        gx,
+        gy,
+      });
+      renderTokens();
+      renderSelectedTokenControls();
+    }
+
+    function centerSelectedToken() {
+      if (!requireMaster()) return;
+      const token = state.selectedTokenId ? state.tokens.get(state.selectedTokenId) : null;
+      const map = getCurrentMap();
+      if (!token || !map) return;
+      state.tokens.set(token.id, {
+        ...token,
+        gx: Math.max(0, Math.floor((map.grid.cols - token.size) / 2)),
+        gy: Math.max(0, Math.floor((map.grid.rows - token.size) / 2)),
+      });
+      renderTokens();
+      focusToken(token.id);
+    }
+
+    function focusToken(tokenId) {
+      const map = getCurrentMap();
+      const token = tokenId ? state.tokens.get(tokenId) : null;
+      if (!map || !token) return;
+      const centerX = map.grid.offsetX + (token.gx + token.size / 2) * map.grid.cell;
+      const centerY = map.grid.offsetY + (token.gy + token.size / 2) * map.grid.cell;
+      const viewW = els.viewport.clientWidth;
+      const viewH = els.viewport.clientHeight;
+      state.localView.x = viewW / 2 - centerX * state.localView.zoom;
+      state.localView.y = viewH / 2 - centerY * state.localView.zoom;
+      applyViewportTransform();
+    }
+
+    function deleteSelectedToken() {
+      if (!requireMaster()) return;
+      const token = state.selectedTokenId ? state.tokens.get(state.selectedTokenId) : null;
+      if (!token) return;
+      state.tokens.delete(token.id);
+      state.selectedTokenId = null;
+      renderTokens();
+      renderSelectedTokenControls();
+    }
+
+    function onTokenPointerDown(event) {
+      if (!requireMaster() || event.button !== 0 || state.toolMode === 'measure') return;
+      event.preventDefault();
+      event.stopPropagation();
+      const tokenId = event.currentTarget.dataset.tokenId;
+      const token = state.tokens.get(tokenId);
+      const map = getCurrentMap();
+      if (!token || !map) return;
+      state.selectedTokenId = tokenId;
+      const startPointer = viewportToImageCoords(event.clientX, event.clientY);
+      const tokenLeft = map.grid.offsetX + token.gx * map.grid.cell;
+      const tokenTop = map.grid.offsetY + token.gy * map.grid.cell;
+      state.dragToken = {
+        tokenId,
+        pointerId: event.pointerId,
+        previewEl: event.currentTarget,
+        offsetX: startPointer.x - tokenLeft,
+        offsetY: startPointer.y - tokenTop,
+        startGX: token.gx,
+        startGY: token.gy,
+        latestGX: token.gx,
+        latestGY: token.gy,
+      };
+      event.currentTarget.classList.add('dragging');
+      renderTokenList();
+      renderSelectedTokenControls();
+    }
+
+    function onViewportPointerDown(event) {
+      const map = getCurrentMap();
+      const targetToken = event.target?.closest ? event.target.closest('.token') : null;
+      const canStartOnLayer = event.target === els.viewport || event.target === els.tokenLayer || event.target === els.cursorLayer || event.target === els.gridOverlay || event.target === els.stage || event.target === els.mapImage || !!targetToken;
+
+      if (state.toolMode === 'measure' && event.button === 0 && canStartOnLayer && map) {
+        const pointer = viewportToImageCoords(event.clientX, event.clientY);
+        const cell = gridCellFromImagePoint(pointer.x, pointer.y, map.grid);
+        state.measureDrag = {
+          pointerId: event.pointerId,
+          startCell: cell,
+          currentCell: cell,
+        };
+        showMeasureOverlay(cell, cell);
+        els.viewport.setPointerCapture(event.pointerId);
+        return;
+      }
+
+      if (event.button !== 1) return;
+      state.panPointer = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        startX: state.localView.x,
+        startY: state.localView.y,
+      };
+      els.viewport.classList.add('panning');
+      els.viewport.setPointerCapture(event.pointerId);
+    }
+
+    function onViewportPointerMove(event) {
+      if (state.panPointer && state.panPointer.pointerId === event.pointerId) {
+        const dx = event.clientX - state.panPointer.clientX;
+        const dy = event.clientY - state.panPointer.clientY;
+        state.localView.x = state.panPointer.startX + dx;
+        state.localView.y = state.panPointer.startY + dy;
+        applyViewportTransform();
+      }
+
+      if (state.measureDrag && state.measureDrag.pointerId === event.pointerId) {
+        const map = getCurrentMap();
+        if (map) {
+          const pointer = viewportToImageCoords(event.clientX, event.clientY);
+          const cell = gridCellFromImagePoint(pointer.x, pointer.y, map.grid);
+          state.measureDrag.currentCell = cell;
+          showMeasureOverlay(state.measureDrag.startCell, cell);
+        }
+      }
+
+      if (state.dragToken && state.dragToken.pointerId === event.pointerId) {
+        const map = getCurrentMap();
+        const token = state.tokens.get(state.dragToken.tokenId);
+        if (!map || !token) return;
+        const pointer = viewportToImageCoords(event.clientX, event.clientY);
+        const snapped = snapImageToGrid(pointer.x - state.dragToken.offsetX, pointer.y - state.dragToken.offsetY, token.size, map.grid);
+        state.dragToken.latestGX = snapped.gx;
+        state.dragToken.latestGY = snapped.gy;
+        if (state.dragToken.previewEl) {
+          state.dragToken.previewEl.style.left = `${snapped.imageX}px`;
+          state.dragToken.previewEl.style.top = `${snapped.imageY}px`;
+        }
+        const now = performance.now();
+        if (now - state.dragBroadcastAt > 60 && (snapped.gx !== token.gx || snapped.gy !== token.gy)) {
+          state.dragBroadcastAt = now;
+          state.tokens.set(token.id, { ...token, gx: snapped.gx, gy: snapped.gy });
+        }
+        const vPoint = imageToViewportCoords(snapped.imageX, snapped.imageY);
+        els.dragRuler.hidden = false;
+        els.dragRuler.style.left = `${vPoint.x + 12}px`;
+        els.dragRuler.style.top = `${vPoint.y - 10}px`;
+        els.dragRuler.textContent = formatDistanceSquares(snapped.gx - state.dragToken.startGX, snapped.gy - state.dragToken.startGY);
+      }
+
+      if (state.provider) {
+        const map = getCurrentMap();
+        const rect = els.viewport.getBoundingClientRect();
+        const insideViewport = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+        if (!map || !insideViewport) {
+          state.provider.awareness.setLocalStateField('cursor', null);
+        } else {
+          const pointer = viewportToImageCoords(event.clientX, event.clientY);
+          state.provider.awareness.setLocalStateField('cursor', {
+            mapId: map.id,
+            imageX: clamp(pointer.x, 0, map.width),
+            imageY: clamp(pointer.y, 0, map.height),
+          });
+        }
+      }
+    }
+
+    function onViewportPointerUp(event) {
+      if (state.panPointer && state.panPointer.pointerId === event.pointerId) {
+        state.panPointer = null;
+        els.viewport.classList.remove('panning', 'space-panning');
+      }
+      if (state.measureDrag && state.measureDrag.pointerId === event.pointerId) {
+        state.measureDrag = null;
+        hideMeasureOverlay();
+      }
+      if (state.dragToken && state.dragToken.pointerId === event.pointerId) {
+        const draggedTokenEl = document.querySelector(`.token[data-token-id="${state.dragToken.tokenId}"]`);
+        const token = state.tokens.get(state.dragToken.tokenId);
+        if (draggedTokenEl) draggedTokenEl.classList.remove('dragging');
+        if (token) {
+          state.tokens.set(token.id, { ...token, gx: state.dragToken.latestGX, gy: state.dragToken.latestGY });
+        }
+        state.dragToken = null;
+        els.dragRuler.hidden = true;
+        renderTokens();
+        renderSelectedTokenControls();
+      }
+    }
+
+    function onWheelZoom(event) {
+      event.preventDefault();
+      const map = getCurrentMap();
+      if (!map) return;
+      const before = viewportToImageCoords(event.clientX, event.clientY);
+      const delta = event.deltaY < 0 ? 1.1 : 0.9;
+      const newZoom = clamp(state.localView.zoom * delta, 0.15, 4);
+      state.localView.zoom = newZoom;
+      const rect = els.viewport.getBoundingClientRect();
+      state.localView.x = event.clientX - rect.left - before.x * newZoom;
+      state.localView.y = event.clientY - rect.top - before.y * newZoom;
+      applyViewportTransform();
+    }
+
+    function bindStaticEvents() {
+      els.roomLauncherToggle.addEventListener('click', openLauncher);
+      els.joinAsMasterBtn.addEventListener('click', async () => {
+        els.roleSelect.value = 'master';
+        syncMainFieldsFromLauncher();
+        els.launcherStatus.textContent = 'Entrando como mestre...';
+        await primeMediaPlayback();
+        await primeMediaPlayback();
+        await primeMediaPlayback();
+        await initRoom(els.roomInput.value.trim() || DEFAULT_ROOM);
+        closeLauncher();
+      });
+      els.joinAsPlayerBtn.addEventListener('click', async () => {
+        els.roleSelect.value = 'player';
+        syncMainFieldsFromLauncher();
+        els.launcherStatus.textContent = 'Entrando como player...';
+        await initRoom(els.roomInput.value.trim() || DEFAULT_ROOM);
+        closeLauncher();
+      });
+      els.launcherRoomInput.addEventListener('input', () => { els.roomInput.value = els.launcherRoomInput.value; });
+      els.launcherNameInput.addEventListener('input', () => { els.nameInput.value = els.launcherNameInput.value; });
+      els.launcherMasterKeyInput.addEventListener('input', () => { els.masterKeyInput.value = els.launcherMasterKeyInput.value; localStorage.setItem('opvtt-master-key', els.masterKeyInput.value || ''); });
+      els.joinRoomBtn.addEventListener('click', async () => {
+        syncLauncherFieldsFromMain();
+        await initRoom(els.roomInput.value.trim() || DEFAULT_ROOM);
+        closeLauncher();
+      });
+      els.roleSelect.addEventListener('change', () => {
+        state.role = els.roleSelect.value;
+        state.isMaster = state.role === 'master';
+        localStorage.setItem('opvtt-role', state.role);
+        setRoleUI();
+        updateMediaFormVisibility();
+      });
+      els.copyRoomBtn.addEventListener('click', async () => {
+        const code = els.roomInput.value.trim();
+        if (!code) return;
+        await navigator.clipboard.writeText(code);
+        setConnectionStatus(`Código da sala copiado: ${code}`, true);
+      });
+      els.mapUpload.addEventListener('change', async (event) => {
+        await addMaps(Array.from(event.target.files || []));
+        event.target.value = '';
+      });
+      els.addTokenBtn.addEventListener('click', addToken);
+      els.toolSelectBtn.addEventListener('click', () => setToolMode('select'));
+      els.toolMeasureBtn.addEventListener('click', () => setToolMode('measure'));
+      els.bgmTypeInput.addEventListener('change', updateMediaFormVisibility);
+      els.cueTypeInput.addEventListener('change', updateMediaFormVisibility);
+      els.gridColorInput.addEventListener('input', () => { if (requireMaster()) applyGridSettingsFromInputs(); });
+      els.gridOpacityInput.addEventListener('input', () => { if (requireMaster()) applyGridSettingsFromInputs(); });
+      els.mediaUnlockBtn?.addEventListener('click', async () => { await primeMediaPlayback(); handleMediaStateChange(true); });
+      els.bgmFileInput?.addEventListener('change', async () => { updateMediaFormVisibility(); await loadBgmFromInputs(); });
+      els.cueFileInput?.addEventListener('change', async () => { updateMediaFormVisibility(); await loadCueFromInputs(); });
+      els.loadBgmBtn.addEventListener('click', loadBgmFromInputs);
+      els.clearBgmBtn.addEventListener('click', clearBgm);
+      els.bgmPlayBtn.addEventListener('click', playBgm);
+      els.bgmPauseBtn.addEventListener('click', pauseBgm);
+      els.bgmStopBtn?.addEventListener('click', stopBgm);
+      els.loadCueBtn.addEventListener('click', loadCueFromInputs);
+      els.preparedAudioInput?.addEventListener('change', async (event) => {
+        await addPreparedAudioFiles(Array.from(event.target.files || []));
+        event.target.value = '';
+      });
+      els.preparedBgmInput?.addEventListener('change', async (event) => {
+        await addPreparedBgmFiles(Array.from(event.target.files || []));
+        event.target.value = '';
+      });
+      els.hideCueBtn.addEventListener('click', hideCue);
+      els.cuePlayBtn.addEventListener('click', playCue);
+      els.cuePauseBtn.addEventListener('click', pauseCue);
+      els.cueStopBtn?.addEventListener('click', stopCue);
+      els.bgmSeekInput?.addEventListener('input', (event) => { if (requireMaster()) seekBgmTo(event.target.value); });
+      els.cueSeekInput?.addEventListener('input', (event) => { if (requireMaster()) seekCueTo(event.target.value); });
+      els.fitViewBtn.addEventListener('click', fitCurrentMapToView);
+      els.zoomInBtn.addEventListener('click', () => {
+        state.localView.zoom = clamp(state.localView.zoom * 1.15, 0.15, 4);
+        applyViewportTransform();
+      });
+      els.zoomOutBtn.addEventListener('click', () => {
+        state.localView.zoom = clamp(state.localView.zoom * 0.87, 0.15, 4);
+        applyViewportTransform();
+      });
+      els.resetPanBtn.addEventListener('click', () => {
+        state.localView.x = 40;
+        state.localView.y = 40;
+        state.localView.zoom = 1;
+        applyViewportTransform();
+      });
+      els.toggleGridBtn.addEventListener('click', () => {
+        if (!state.scene) return;
+        const next = state.scene.get('gridEnabled') === false;
+        state.scene.set('gridEnabled', next);
+        renderGridOverlay();
+      });
+      els.autoGridBtn.addEventListener('click', autoGridCurrentMap);
+      els.applyGridBtn.addEventListener('click', applyGridFromInputs);
+      els.gridQuickColsRange.addEventListener('input', (event) => updateQuickGridPreviewFromCols(event.target.value, true));
+      els.gridQuickColsNumber.addEventListener('input', (event) => updateQuickGridPreviewFromCols(event.target.value, true));
+      els.gridColsInput.addEventListener('input', (event) => updateQuickGridPreviewFromCols(event.target.value, false));
+      els.saveTokenBtn.addEventListener('click', saveSelectedToken);
+      els.centerTokenBtn.addEventListener('click', centerSelectedToken);
+      els.deleteTokenBtn.addEventListener('click', deleteSelectedToken);
+
+      els.mapList.addEventListener('click', (event) => {
+        const btn = event.target.closest('button[data-action]');
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const mapId = btn.dataset.mapId;
+        if (!requireMaster()) return;
+        if (action === 'activate') {
+          setCurrentMap(mapId);
+        }
+        if (action === 'delete' && state.maps.has(mapId)) {
+          state.maps.delete(mapId);
+          if (getCurrentMapId() === mapId) {
+            const firstMap = getAllMaps()[0];
+            state.scene.set('currentMapId', firstMap?.id || null);
+          }
+          renderAll();
+        }
+      });
+
+      els.tokenList.addEventListener('click', (event) => {
+        if (!requireMaster()) return;
+        const btn = event.target.closest('button[data-action]');
+        if (!btn) return;
+        const tokenId = btn.dataset.tokenId;
+        if (btn.dataset.action === 'select-token') {
+          state.selectedTokenId = tokenId;
+          renderTokens();
+          renderSelectedTokenControls();
+        }
+        if (btn.dataset.action === 'focus-token') {
+          state.selectedTokenId = tokenId;
+          renderTokens();
+          renderSelectedTokenControls();
+          focusToken(tokenId);
+        }
+      });
+
+      els.preparedAudioList?.addEventListener('click', (event) => {
+        if (!requireMaster()) return;
+        const btn = event.target.closest('button[data-action]');
+        if (!btn) return;
+        const clipId = btn.dataset.clipId;
+        if (btn.dataset.action === 'clip-play') loadPreparedClip('cue', clipId, true);
+        if (btn.dataset.action === 'clip-pause') {
+          const cueState = getCueState();
+          if (cueState.clipId === clipId && cueState.playing) pauseCue();
+          else if (cueState.clipId === clipId && !cueState.playing && cueState.src) playCue();
+        }
+        if (btn.dataset.action === 'clip-delete') {
+          const cueState = getCueState();
+          if (cueState.clipId === clipId) stopCue();
+          const clips = getPreparedAudioClips().filter((entry) => entry.id !== clipId);
+          setPreparedAudioClips(clips);
+          renderPreparedAudioList();
+        }
+      });
+
+      els.preparedBgmList?.addEventListener('click', (event) => {
+        if (!requireMaster()) return;
+        const btn = event.target.closest('button[data-action]');
+        if (!btn) return;
+        const clipId = btn.dataset.clipId;
+        if (btn.dataset.action === 'bgmclip-play') playPreparedBgm(clipId);
+        if (btn.dataset.action === 'bgmclip-pause') {
+          const bgmState = getBgmState();
+          if (bgmState.clipId === clipId && bgmState.playing) pauseBgm();
+          else if (bgmState.clipId === clipId && !bgmState.playing && bgmState.src) playBgm();
+        }
+        if (btn.dataset.action === 'bgmclip-delete') {
+          const bgmState = getBgmState();
+          if (bgmState.clipId === clipId) clearBgm();
+          const clips = getPreparedBgmClips().filter((entry) => entry.id !== clipId);
+          setPreparedBgmClips(clips);
+          renderPreparedBgmList();
+        }
+      });
+
+      els.viewport.addEventListener('pointerdown', onViewportPointerDown);
+      els.viewport.addEventListener('pointermove', onViewportPointerMove);
+      window.addEventListener('pointermove', onViewportPointerMove);
+      window.addEventListener('pointerup', onViewportPointerUp);
+      window.addEventListener('pointercancel', onViewportPointerUp);
+      els.viewport.addEventListener('wheel', onWheelZoom, { passive: false });
+      els.viewport.addEventListener('click', (event) => {
+        if (!requireMaster()) return;
+        if (state.toolMode === 'measure') return;
+        if (event.target === els.viewport || event.target === els.tokenLayer || event.target === els.gridOverlay || event.target === els.cursorLayer || event.target === els.stage || event.target === els.mapImage) {
+          state.selectedTokenId = null;
+          renderTokens();
+          renderSelectedTokenControls();
+        }
+      });
+
+      window.addEventListener('keydown', (event) => {
+        if (event.code === 'KeyV' && !event.repeat) setToolMode('select');
+        if (event.code === 'KeyM' && !event.repeat) setToolMode('measure');
+      });
+      document.addEventListener('pointerdown', () => { primeMediaPlayback(); }, { passive: true });
+      window.addEventListener('resize', () => {
+        applyViewportTransform();
+        renderCursors();
+      });
+
+      els.nameInput.addEventListener('change', () => {
+        localStorage.setItem('opvtt-name', els.nameInput.value.trim() || 'Mestre');
+        if (state.provider) setAwarenessUser();
+      });
+    }
+
+    function setAwarenessUser() {
+      if (!state.provider) return;
+      const name = els.nameInput.value.trim() || 'Jogador';
+      const colorSeed = [...name].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+      const colors = ['#8b5cf6', '#22c55e', '#ef4444', '#06b6d4', '#f59e0b', '#ec4899', '#84cc16'];
+      const color = colors[colorSeed % colors.length];
+      state.provider.awareness.setLocalStateField('user', { name, color, role: state.isMaster ? 'master' : 'player' });
+    }
+
+    function subscribeSharedTypes() {
+      const rerender = () => renderAll();
+      state.maps.observe(rerender);
+      state.tokens.observe(rerender);
+      state.scene.observe(rerender);
+      state.media.observe(() => handleMediaStateChange());
+      state.provider.awareness.on('change', () => {
+        updatePresence();
+        renderCursors();
+      });
+      state.provider.on('status', ({ status }) => {
+        const room = els.roomInput.value.trim();
+        const label = status === 'connected'
+          ? `Conectado à sala “${room}”. Compartilhe este código com seus jogadores.`
+          : `Conectando à sala “${room}”...`;
+        setConnectionStatus(label, status === 'connected');
+      });
+    }
+
+    async function applyMasterAccessFromForm() {
+      const enteredKey = els.masterKeyInput.value.trim();
+      const existingHash = state.scene?.get('masterKeyHash');
+      if (!existingHash && state.role === 'master') {
+        if (!enteredKey) {
+          state.isMaster = false;
+          setConnectionStatus('Defina uma chave do mestre antes de entrar como mestre.');
+        } else {
+          state.scene.set('masterKeyHash', await hashString(enteredKey));
+          state.isMaster = true;
+        }
+      } else if (existingHash && state.role === 'master') {
+        if (!enteredKey || await hashString(enteredKey) !== existingHash) {
+          state.isMaster = false;
+          setConnectionStatus('Chave do mestre incorreta. Entrando apenas como player.');
+        } else {
+          state.isMaster = true;
+        }
+      } else {
+        state.isMaster = false;
+      }
+    }
+
+    async function initRoom(room) {
+      const safeRoom = (room || DEFAULT_ROOM).trim().toLowerCase().replace(/\s+/g, '-');
+      state.role = els.roleSelect.value;
+      state.isMaster = state.role === 'master';
+      els.roomInput.value = safeRoom;
+      localStorage.setItem('opvtt-room', safeRoom);
+      localStorage.setItem('opvtt-name', els.nameInput.value.trim() || 'Mestre');
+      localStorage.setItem('opvtt-role', state.role);
+
+      const sameRoomActive = !!state.provider && !!state.ydoc && state.currentRoom === safeRoom;
+      if (sameRoomActive) {
+        await applyMasterAccessFromForm();
+        setRoleUI();
+        updateMediaFormVisibility();
+        setAwarenessUser();
+        updatePresence();
+        renderCursors();
+        renderAll();
+        setConnectionStatus(`Você permaneceu na sala “${safeRoom}”. O conteúdo já carregado foi preservado.`, true);
+        return;
+      }
+
+      if (state.provider) {
+        try { state.provider.destroy(); } catch {}
+      }
+      if (state.ydoc) {
+        try { state.ydoc.destroy(); } catch {}
+      }
+
+      state.ydoc = new Y.Doc();
+      state.provider = new WebrtcProvider(`ordem-paranormal-vtt-${safeRoom}`, state.ydoc, {
+        signaling: ['wss://signaling.yjs.dev', 'wss://y-webrtc-eu.fly.dev'],
+        maxConns: 20,
+      });
+      state.currentRoom = safeRoom;
+      state.maps = state.ydoc.getMap('maps');
+      state.tokens = state.ydoc.getMap('tokens');
+      state.scene = state.ydoc.getMap('scene');
+      state.meta = state.ydoc.getMap('meta');
+      state.media = state.ydoc.getMap('media');
+      ensureDefaults();
+
+      await applyMasterAccessFromForm();
+
+      setRoleUI();
+      updateMediaFormVisibility();
+      setAwarenessUser();
+      subscribeSharedTypes();
+      renderAll();
+      setConnectionStatus(`Conectando à sala “${safeRoom}”...`);
+    }
+
+    bindStaticEvents();
+    setRoleUI();
+    updateMediaFormVisibility();
+    openLauncher();
+  </script>
+</body>
+</html>
